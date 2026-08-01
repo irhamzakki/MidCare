@@ -1,0 +1,27 @@
+resources/views
+│
+├── welcome.blade.php
+├── tentang.blade.php
+├── edukasi.blade.php
+├── artikel.blade.php
+├── faq.blade.php
+├── kontak.blade.php
+│
+├── dashboard.blade.php
+│
+├── pengguna
+│   ├── kuesioner.blade.php
+│   ├── hasil.blade.php
+│   └── riwayat.blade.php
+│
+├── psikolog
+│   ├── dashboard.blade.php
+│   ├── pengguna.blade.php
+│   └── rekomendasi.blade.php
+│
+└── admin
+    ├── dashboard.blade.php
+    ├── users.blade.php
+    ├── dataset.blade.php
+    ├── kuesioner.blade.php
+    └── laporan.blade.php
