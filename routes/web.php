@@ -8,6 +8,12 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\EdukasiController;
 use App\Http\Controllers\Admin\PasienController;
 use App\Http\Controllers\Admin\ArtikelController;
+use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Psikolog\DashboardController as PsikologDashboardController;
+use App\Http\Controllers\Psikolog\PasienController as PsikologPasienController;
+use App\Http\Controllers\Pasien\DashboardController as PasienDashboardController;
+use App\Http\Controllers\Pengguna\HasilController;
+use App\Http\Controllers\Admin\KuesionerController;
 
 /*
 |--------------------------------------------------------------------------
@@ -40,6 +46,11 @@ Route::get('/screening', [ScreeningController::class, 'index'])->name('screening
 Route::post('/screening', [ScreeningController::class, 'store'])->name('screening.store');
 Route::redirect('/screaning', '/screening');
 
+// Akses publik/pasien ke Cek Kesehatan Mental
+Route::middleware(['auth', 'role:pasien'])->group(function () {
+    Route::get('/pasien/cek-kesehatan-mental', [ScreeningController::class, 'index'])->name('pasien.cek-kesehatan-mental');
+});
+
 
 /*
 |--------------------------------------------------------------------------
@@ -55,13 +66,43 @@ Route::middleware('auth')->group(function () {
 
 /*
 |--------------------------------------------------------------------------
-| ROLE: PENGGUNA
+| ROLE: PASIEN (COMPATIBILITY)
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth'])->prefix('pengguna')->name('pengguna.')->group(function () {
-    Route::get('/kuesioner', function () { return view('pengguna.kuesioner'); })->name('kuesioner');
-    Route::get('/hasil', function () { return view('pengguna.hasil'); })->name('hasil');
+Route::middleware(['auth','role:pasien'])->prefix('pengguna')->name('pengguna.')->group(function () {
+    Route::get('/kuesioner', function () {
+        $fiturPenggunas = \App\Models\FiturPengguna::latest()->get();
+
+        return view('pengguna.kuesioner', compact('fiturPenggunas'));
+    })->name('kuesioner');
+    Route::get('/hasil', [HasilController::class, 'index'])->name('hasil');
+    Route::get('/hasil/{id}', [HasilController::class, 'show'])->name('hasil.show');
     Route::get('/riwayat', function () { return view('pengguna.riwayat'); })->name('riwayat');
+});
+use App\Http\Controllers\Admin\PsikologController;
+
+Route::middleware(['auth','role:admin'])
+->prefix('admin')
+->group(function(){
+
+Route::get(
+'/pasien/create',
+[PasienController::class,'create']
+)
+->name('admin.pasien.create');
+
+Route::post(
+'/pasien/store',
+[PasienController::class,'store']
+)
+->name('admin.pasien.store');
+
+Route::post(
+'/psikolog/store',
+[PsikologController::class,'store']
+)
+->name('admin.psikolog.store');
+
 });
 
 
@@ -70,10 +111,23 @@ Route::middleware(['auth'])->prefix('pengguna')->name('pengguna.')->group(functi
 | ROLE: PSIKOLOG
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth'])->prefix('psikolog')->name('psikolog.')->group(function () {
-    Route::get('/dashboard', function () { return view('psikolog.dashboard'); })->name('dashboard');
-    Route::get('/pengguna', function () { return view('psikolog.pengguna'); })->name('pengguna');
+Route::middleware(['auth','role:psikolog'])->prefix('psikolog')->name('psikolog.')->group(function () {
+    Route::get('/dashboard', [PsikologDashboardController::class, 'index'])->name('dashboard');
+    Route::get('/pengguna', [PsikologPasienController::class, 'index'])->name('pengguna');
+    Route::get('/detail', [PsikologPasienController::class, 'detail'])->name('detail');
+    Route::get('/hasil', [PsikologPasienController::class, 'hasil'])->name('hasil');
+    Route::get('/cluster', [PsikologPasienController::class, 'cluster'])->name('cluster');
+    Route::post('/pengguna/note', [PsikologPasienController::class, 'store'])->name('pengguna.store');
     Route::get('/rekomendasi', function () { return view('psikolog.rekomendasi'); })->name('rekomendasi');
+});
+
+// ROUTES KHUSUS PASIEN (RBAC)
+Route::middleware(['auth','role:pasien'])->prefix('pasien')->name('pasien.')->group(function () {
+    Route::get('/dashboard', [PasienDashboardController::class, 'index'])->name('dashboard');
+    Route::get('/tes', function () { return view('pasien.tes'); })->name('tes');
+    Route::get('/hasil', function () { return view('pasien.hasil'); })->name('hasil');
+    Route::get('/riwayat', function () { return view('pasien.riwayat'); })->name('riwayat');
+    Route::get('/rekomendasi', function () { return view('pasien.rekomendasi'); })->name('rekomendasi');
 });
 
 
@@ -82,10 +136,11 @@ Route::middleware(['auth'])->prefix('psikolog')->name('psikolog.')->group(functi
 | ROLE: ADMIN (MANAGEMENT & FITUR DATA)
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth', 'verified'])->prefix('admin')->name('Admin.')->group(function () {
+Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('Admin.')->group(function () {
     
     // Dashboard Utama Admin
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
 
     // Fitur Cek Kesehatan Mental (CekMel) - Panel Admin
     Route::prefix('CekMel')->name('CekMel.')->group(function () {
@@ -107,6 +162,11 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('Admin.')->group(
         Route::post('/Pasien', [PasienController::class, 'store'])->name('store');
     });
 
+    // Manajemen Psikolog
+    Route::prefix('Psikolog')->name('Psikolog.')->group(function () {
+        Route::get('/Psikolog', [\App\Http\Controllers\Admin\PsikologController::class, 'index'])->name('index');
+    });
+
     // Manajemen Artikel
     Route::prefix('Artikel')->name('Artikel.')->group(function () {
         Route::get('/Artikel', [ArtikelController::class, 'index'])->name('Artikel');
@@ -114,9 +174,18 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('Admin.')->group(
         Route::post('/Simpan', [ArtikelController::class, 'store'])->name('store');
     });
 
+    // Manajemen User - dibuat oleh Admin
+    Route::get('/users', function () { return view('Admin.users'); })->name('users');
+    Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
+    Route::post('/users', [UserController::class, 'store'])->name('users.store');
+
     // Menu View Statis Tambahan Admin
-    Route::get('/users', function () { return view('admin.users'); })->name('users');
-    Route::get('/kuesioner', function () { return view('admin.kuesioner'); })->name('kuesioner');
+
+    Route::get('/kuesioner', [KuesionerController::class, 'index'])
+    ->name('admin.kuesioner.index');
+    Route::get('/kuesioner/{id}/detail',
+    [KuesionerController::class, 'show']
+)->name('pengguna.hasil-detail');
     Route::get('/dataset', function () { return view('admin.dataset'); })->name('dataset');
     Route::get('/laporan', function () { return view('admin.laporan'); })->name('laporan');
 });

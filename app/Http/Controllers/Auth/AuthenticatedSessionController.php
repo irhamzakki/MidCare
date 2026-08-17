@@ -34,12 +34,15 @@ class AuthenticatedSessionController extends Controller
 
     protected function redirectToDashboard(): string
     {
-        $role = strtolower((string) (Auth::user()?->role ?? 'admin'));
+        // Menentukan tujuan redirect berdasarkan role user.
+        // Memetakan role -> route yang ada di aplikasi.
+        $role = strtolower((string) (Auth::user()?->role ?? ''));
 
         return match ($role) {
+            'admin' => route('Admin.dashboard'),
             'psikolog' => route('psikolog.dashboard'),
-            'pengguna' => route('pengguna.kuesioner'),
-            default => route('Admin.dashboard'),
+            'pasien' => route('pasien.dashboard'),
+            default => route('home'),
         };
     }
 

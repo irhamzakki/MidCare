@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\FiturPengguna;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -19,6 +20,27 @@ class ProfileTest extends TestCase
             ->get('/profile');
 
         $response->assertOk();
+    }
+
+    public function test_patient_kuesioner_page_loads_with_questionnaire_data(): void
+    {
+        $user = User::factory()->create(['role' => 'pasien']);
+
+        FiturPengguna::create([
+            'nama' => 'Ayu Rahma',
+            'usia' => 18,
+            'jenis_kelamin' => 'Perempuan',
+            'orangtua' => 'Ayah dan Ibu',
+            'nilai_emosi' => 4,
+            'kontrol_emosi' => 4,
+        ]);
+
+        $response = $this
+            ->actingAs($user)
+            ->get('/pengguna/kuesioner');
+
+        $response->assertOk()
+            ->assertViewHas('fiturPenggunas');
     }
 
     public function test_profile_information_can_be_updated(): void

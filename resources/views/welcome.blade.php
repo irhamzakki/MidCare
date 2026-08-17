@@ -85,7 +85,7 @@
                             <div class="space-y-5">
                                 <div>
                                     <div class="flex justify-between text-sm mb-2">
-                                        <span>Stres</span><span>68%</span>
+                                        <span>Karakter & Regulasi Emosi</span><span>68%</span>
                                     </div>
                                     <div class="h-3 rounded-full bg-slate-100">
                                         <div class="h-3 rounded-full bg-amber-500" style="width:68%"></div>
@@ -93,7 +93,7 @@
                                 </div>
                                 <div>
                                     <div class="flex justify-between text-sm mb-2">
-                                        <span>Kecemasan</span><span>52%</span>
+                                        <span>Koping & Penerimaan</span><span>52%</span>
                                     </div>
                                     <div class="h-3 rounded-full bg-slate-100">
                                         <div class="h-3 rounded-full bg-blue-500" style="width:52%"></div>
@@ -101,10 +101,18 @@
                                 </div>
                                 <div>
                                     <div class="flex justify-between text-sm mb-2">
-                                        <span>Dukungan Sosial</span><span>74%</span>
+                                        <span>Hubungan dengan Ayah</span><span>74%</span>
                                     </div>
                                     <div class="h-3 rounded-full bg-slate-100">
                                         <div class="h-3 rounded-full bg-emerald-500" style="width:74%"></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between text-sm mb-2">
+                                        <span>Hubungan dengan ibu</span><span>70%</span>
+                                    </div>
+                                    <div class="h-3 rounded-full bg-slate-100">
+                                        <div class="h-3 rounded-full bg-blue-700" style="width:70%"></div>
                                     </div>
                                 </div>
                             </div>

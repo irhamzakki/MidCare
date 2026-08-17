@@ -2,8 +2,6 @@
 
 <div class="min-h-screen flex items-center justify-center bg-slate-950 px-4 py-10 relative overflow-hidden text-slate-100">
 
-    
-
     <div class="relative w-full max-w-lg animate-[fadeIn_0.8s_ease-out]">
 
         <div class="text-center mb-6">
@@ -71,6 +69,21 @@
                         placeholder="Masukkan email"/>
 
                     <x-input-error :messages="$errors->get('email')" class="mt-2"/>
+                </div>
+
+                <div>
+                    <x-input-label for="role" :value="__('Daftar Sebagai')" class="font-semibold text-slate-200 text-sm mb-1.5 block"/>
+
+                    <select
+                        id="role"
+                        name="role"
+                        class="block w-full rounded-xl border-slate-800 bg-slate-950/60 px-4 py-3 text-sm text-slate-100 placeholder-slate-500 transition-all duration-200 focus:border-indigo-500 focus:bg-slate-950 focus:ring-2 focus:ring-indigo-500/20"
+                        required>
+                        <option value="pasien" {{ old('role') === 'pasien' ? 'selected' : '' }}>Pasien</option>
+                        <option value="psikolog" {{ old('role') === 'psikolog' ? 'selected' : '' }}>Psikolog</option>
+                    </select>
+
+                    <x-input-error :messages="$errors->get('role')" class="mt-2"/>
                 </div>
 
                 <div>

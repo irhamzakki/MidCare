@@ -38,7 +38,7 @@ class FiturPengguna extends Model
 
         // Hubungan dengan Ibu
         'ibu_hargai_perasaan', 'ibu_baik', 'ingin_ibu_berbeda', 'ibu_terima_saya', 
-        'senang_masukan_ibu', 'percuma_perlihatkan_ibu', 'ibu_tahu_marah', 'malu_bodoh_with_ibu', 
+        'senang_masukan_ibu', 'percuma_perlihatkan_ibu', 'ibu_tahu_marah', 'malu_bodoh_dengan_ibu', 
         'gundah_dengan_ibu', 'ibu_tahu_sedikit', 'ibu_hargai_pendapat', 'ibu_percaya_saya', 
         'tak_mau_repotkan_ibu', 'ibu_bantu_pahami', 'cerita_ibu', 'marah_dengan_ibu', 
         'kurang_perhatian_ibu', 'ibu_dorong_cerita', 'ibu_pahami_saya', 'ibu_pahami_marah_saya', 

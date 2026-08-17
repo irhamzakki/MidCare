@@ -1,11 +1,19 @@
-<!-- Mengintegrasikan status open langsung ke pembungkus utama -->
-<nav x-data="{ open: false }" 
-     :class="{ 'open': open }" 
-     class="mc-sidebar" 
-     id="sidebar">
-     
+<!-- Pastikan Alpine.js sudah di-load di layout utama, contoh:
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+-->
+
+<div x-data="{ open: false, profileOpen: false }">
+
     <style>
-        /* Mengubah total pembungkus menjadi Sidebar Samping */
+        /* Overlay gelap saat sidebar terbuka di mobile */
+        .mc-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, .5);
+            z-index: 40;
+        }
+
+        /* Wrapper utama Sidebar */
         .mc-sidebar {
             background: linear-gradient(180deg, #0f172a, #1e293b);
             border-right: 1px solid rgba(255,255,255,.08);
@@ -22,13 +30,11 @@
             justify-content: space-between;
             padding: 24px 16px;
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            
-            /* PERBAIKAN 1: Mengaktifkan scroll mandiri jika isi menu terlalu panjang */
+
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
         }
 
-        /* Sembunyikan scrollbar bawaan browser agar sidebar tetap minimalis */
         .mc-sidebar::-webkit-scrollbar {
             width: 5px;
         }
@@ -74,7 +80,6 @@
             letter-spacing: 0.5px;
         }
 
-        /* Menu Navigasi Vertikal */
         .mc-menu {
             display: flex;
             flex-direction: column;
@@ -98,7 +103,7 @@
         .mc-link:hover {
             background: rgba(255,255,255,.06);
             color: white;
-            padding-left: 20px; /* Efek bergeser sedikit saat hover */
+            padding-left: 20px;
         }
 
         .mc-link.active {
@@ -107,11 +112,34 @@
             box-shadow: inset 0 0 0 1px rgba(255,255,255,.08);
         }
 
-        /* Informasi Pengguna Terkunci di Bagian Bawah Sidebar */
+        /* Tombol tutup menu, hanya tampil di mobile */
+        .mc-close-menu-btn {
+            display: none;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            margin-top: 8px;
+            padding: 12px 16px;
+            border-radius: 14px;
+            border: 1px dashed rgba(255,255,255,.15);
+            background: transparent;
+            color: #94a3b8;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            transition: .2s;
+        }
+
+        .mc-close-menu-btn:hover {
+            color: white;
+            border-color: rgba(255,255,255,.3);
+        }
+
         .mc-sidebar-bottom {
+            position: relative; /* diperlukan agar dropdown ter-posisi dengan benar */
             border-top: 1px solid rgba(255,255,255,.08);
             padding-top: 20px;
-            margin-top: 20px; /* Jaga jarak jika menu atas menumpuk */
+            margin-top: 20px;
         }
 
         .mc-user-button {
@@ -175,6 +203,18 @@
             font-weight: 600;
         }
 
+        /* Dropdown profil (sebelumnya tidak punya style sama sekali) */
+        .mc-dropdown-menu {
+            position: absolute;
+            bottom: calc(100% + 8px);
+            left: 0;
+            right: 0;
+            background: white;
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,.2);
+        }
+
         .mc-dropdown-link {
             display: block;
             padding: 12px 16px;
@@ -188,7 +228,6 @@
             background: #f1f5f9;
         }
 
-        /* Tombol Pemicu Mobile Toggle (Hamburger) */
         .mc-hamburger {
             position: fixed;
             top: 16px;
@@ -200,113 +239,191 @@
             border-radius: 12px;
             cursor: pointer;
             z-index: 60;
-            display: none; /* Default tersembunyi di desktop */
+            display: none;
             align-items: center;
             justify-content: center;
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
 
-        /* Responsif Layar Gawai (Mobile & Tablet) */
         @media (max-width: 1024px) {
             .mc-sidebar {
                 transform: translateX(-100%);
             }
-            /* PERBAIKAN 2: Memastikan kelas open terpicu dengan transisi halus */
             .mc-sidebar.open {
                 transform: translateX(0);
             }
             .mc-hamburger {
                 display: inline-flex;
             }
+            .mc-close-menu-btn {
+                display: flex;
+            }
         }
     </style>
 
-    <!-- Bagian Atas Sidebar: Logo & Navigasi Utama -->
-    <div class="mc-sidebar-top">
-        <a href="{{ route('Admin.dashboard') }}" class="mc-logo">
-            <div class="mc-logo-box">
-                <img src="{{ asset('images/logo.png') }}" alt="Logo">
-            </div>
-            <span class="mc-brand">MindCare</span>
-        </a>
+    <!-- Overlay gelap, hanya aktif di mobile saat sidebar terbuka -->
+    <div x-show="open"
+         x-transition.opacity
+         @click="open = false"
+         class="mc-overlay"
+         style="display: none;"></div>
 
-        <div class="mc-menu">
-            <a href="{{ route('Admin.dashboard') }}"
-               class="mc-link {{ request()->routeIs('Admin.dashboard') ? 'active' : '' }}">
-                <span>Dashboard</span>
+    <!-- Sidebar -->
+    <nav :class="{ 'open': open }" class="mc-sidebar" id="sidebar">
+
+        <div class="mc-sidebar-top">
+            <a href="{{ route('Admin.dashboard') }}" class="mc-logo">
+                <div class="mc-logo-box">
+                    <img src="{{ asset('images/logo.png') }}" alt="Logo">
+                </div>
+                <span class="mc-brand">MindCare</span>
             </a>
 
-            <a href="{{ route('Admin.Pasien.Pasien') }}"
-               class="mc-link {{ request()->routeIs('Admin.Pasien.Pasien') ? 'active' : '' }}">
-                <span>Pasien</span>
-            </a>
+            <div class="mc-menu">
+                @php $role = strtolower(Auth::user()->role ?? ''); @endphp
 
-            <a href="{{ route('Admin.Edukasi.Edukasi') }}"
-               class="mc-link {{ request()->routeIs('Admin.Edukasi.Edukasi') ? 'active' : '' }}">
-                <span>Edukasi</span>
-            </a>
-
-            <a href="{{ route('Admin.Artikel.Artikel') }}"
-               class="mc-link {{ request()->routeIs('Admin.Artikel.Artikel') ? 'active' : '' }}">
-                <span>Artikel</span>
-            </a>
-
-            <a href="{{ route('Admin.CekMel.CekMel') }}"
-               class="mc-link {{ request()->routeIs('Admin.CekMel.CekMel') ? 'active' : '' }}">
-                <span>Cek Kesehatan Mental</span>
-            </a>
-            <!-- Tombol Interaktif Pengontrol Tampilan Sidebar -->
-            <button type="button" class="sidebar-toggle-btn" onclick="toggleSidebarLayout()">
-                📋 <span>Buka / Tutup Navigasi</span>
-            </button>
-        </div>
-    </div>
-
-    <!-- Bagian Bawah Sidebar: Profil Akun & Dropdown Keluar -->
-    <div class="mc-sidebar-bottom">
-        <x-dropdown align="top" width="48">
-            <x-slot name="trigger">
-                <button class="mc-user-button">
-                    <div class="mc-user-left">
-                        <div class="mc-avatar">
-                            {{ strtoupper(substr(Auth::user()->name ?? 'U', 0, 1)) }}
-                        </div>
-                        <div class="mc-user-info">
-                            <div class="mc-user-name">{{ Auth::user()->name ?? 'User' }}</div>
-                            <div class="mc-user-role">{{ Auth::user()->role ?? 'Pengguna' }}</div>
-                        </div>
-                    </div>
-                    <svg width="14" height="14" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clip-rule="evenodd" />
-                    </svg>
-                </button>
-            </x-slot>
-
-            <x-slot name="content">
-                <a href="{{ route('profile.edit') }}" class="mc-dropdown-link">
-                    Profil Saya
-                </a>
-                <form method="POST" action="{{ route('logout') }}">
-                    @csrf
-                    <a href="{{ route('logout') }}"
-                       class="mc-dropdown-link"
-                       onclick="event.preventDefault(); this.closest('form').submit();">
-                        Keluar
+                {{-- Menu Admin --}}
+                @if($role === 'admin')
+                    <a href="{{ route('Admin.dashboard') }}"
+                       class="mc-link {{ request()->routeIs('Admin.dashboard') ? 'active' : '' }}">
+                        <span>Dashboard</span>
                     </a>
-                </form>
-            </x-slot>
-        </x-dropdown>
-    </div>
-</nav>
 
-<!-- Tombol Toggle Hamburger Khusus Layar Ponsel / Tablet -->
-<button @click="open = !open" class="mc-hamburger" aria-label="Toggle Menu">
-    <!-- Icon Hamburger -->
-    <svg x-show="!open" width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-    </svg>
-    <!-- Icon Close -->
-    <svg x-show="open" width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: none;">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-    </svg>
-</button>
+                    <a href="{{ route('Admin.Pasien.Pasien') }}"
+                       class="mc-link {{ request()->routeIs('Admin.Pasien.Pasien') ? 'active' : '' }}">
+                        <span>Kelola Pasien</span>
+                    </a>
+
+                    <a href="{{ route('Admin.Psikolog.index') ?? '#' }}"
+                       class="mc-link {{ request()->routeIs('Admin.Psikolog.index') ? 'active' : '' }}">
+                        <span>Kelola Psikolog</span>
+                    </a>
+
+                    <a href="{{ route('Admin.users') ?? '#' }}"
+                       class="mc-link {{ request()->routeIs('Admin.users') ? 'active' : '' }}">
+                        <span>Kelola User</span>
+                    </a>
+
+                    <a href="{{ route('pengguna.kuesioner') ?? '#' }}"
+                       class="mc-link {{ request()->routeIs('pengguna.kuesioner') ? 'active' : '' }}">
+                        <span>Kelola Kuesioner</span>
+                    </a>
+
+                    <a href="{{ route('Admin.laporan') ?? '#' }}"
+                       class="mc-link {{ request()->routeIs('Admin.laporan') ? 'active' : '' }}">
+                        <span>Statistik / Laporan</span>
+                    </a>
+                @elseif($role === 'psikolog')
+                    {{-- Menu Psikolog --}}
+                    <a href="{{ route('psikolog.dashboard') }}"
+                       class="mc-link {{ request()->routeIs('psikolog.dashboard') ? 'active' : '' }}">
+                        <span>Dashboard</span>
+                    </a>
+
+                    <a href="{{ route('psikolog.pengguna') }}"
+                       class="mc-link {{ request()->routeIs('psikolog.pengguna') ? 'active' : '' }}">
+                        <span>Riwayat Pemeriksaan</span>
+                    </a>
+
+                    <a href="{{ route('psikolog.detail') }}"
+                       class="mc-link {{ request()->routeIs('psikolog.detail') ? 'active' : '' }}">
+                        <span>Detail Pasien</span>
+                    </a>
+
+                    <a href="{{ route('psikolog.hasil') }}"
+                       class="mc-link {{ request()->routeIs('psikolog.hasil') ? 'active' : '' }}">
+                        <span>Hasil Pemeriksaan</span>
+                    </a>
+
+                    <a href="{{ route('psikolog.cluster') }}"
+                       class="mc-link {{ request()->routeIs('psikolog.cluster') ? 'active' : '' }}">
+                        <span>Profil Cluster</span>
+                    </a>
+
+                @elseif($role === 'pasien')
+                    {{-- Menu Pasien --}}
+                    <a href="{{ route('pasien.dashboard') }}"
+                       class="mc-link {{ request()->routeIs('pasien.dashboard') ? 'active' : '' }}">
+                        <span>Dashboard</span>
+                    </a>
+
+                    <a href="{{ route('pasien.tes') }}"
+                       class="mc-link {{ request()->routeIs('pasien.tes') ? 'active' : '' }}">
+                        <span>Tes Kesehatan Mental</span>
+                    </a>
+
+                    <a href="{{ route('pasien.hasil') }}"
+                       class="mc-link {{ request()->routeIs('pasien.hasil') ? 'active' : '' }}">
+                        <span>Hasil Risiko</span>
+                    </a>
+
+                    <a href="{{ route('pasien.riwayat') }}"
+                       class="mc-link {{ request()->routeIs('pasien.riwayat') ? 'active' : '' }}">
+                        <span>Riwayat Pemeriksaan</span>
+                    </a>
+
+                    <a href="{{ route('pasien.rekomendasi') }}"
+                       class="mc-link {{ request()->routeIs('pasien.rekomendasi') ? 'active' : '' }}">
+                        <span>Rekomendasi</span>
+                    </a>
+                @else
+                    {{-- Jika role tidak valid, tampilkan link ke halaman beranda --}}
+                    <a href="{{ route('home') }}" class="mc-link">
+                        <span>Home</span>
+                    </a>
+                @endif
+
+                <!-- Tombol tutup menu (hanya tampil di mobile) -->
+                <button type="button" class="mc-close-menu-btn" @click="open = false">
+                    ✖ <span>Tutup Navigasi</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Profil & Logout -->
+        <div class="mc-sidebar-bottom">
+            <button type="button" class="mc-user-button" @click="profileOpen = !profileOpen">
+                <div class="mc-user-left">
+                    <div class="mc-avatar">
+                        {{ strtoupper(substr(Auth::user()->name ?? 'U', 0, 1)) }}
+                    </div>
+                    <div class="mc-user-info">
+                        <div class="mc-user-name">{{ Auth::user()->name ?? 'User' }}</div>
+                        <div class="mc-user-role">{{ Auth::user()->role ?? 'Pengguna' }}</div>
+                    </div>
+                </div>
+                <svg width="14" height="14" fill="currentColor" viewBox="0 0 20 20"
+                     :style="profileOpen ? 'transform: rotate(180deg)' : ''">
+                    <path fill-rule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clip-rule="evenodd" />
+                </svg>
+            </button>
+
+            <div x-show="profileOpen"
+                 x-transition
+                 @click.away="profileOpen = false"
+                 class="mc-dropdown-menu"
+                 style="display: none;">
+                <a href="{{ route('profile.edit') }}" class="mc-dropdown-link">
+                    ⚙️ Profil Saya
+                </a>
+                <form method="POST" action="{{ route('logout') }}" style="margin: 0;">
+                    @csrf
+                    <button type="submit" class="mc-dropdown-link" style="width: 100%; text-align: left; border: none; background: none; cursor: pointer; padding: 10px 12px;">
+                        🚪 Keluar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Tombol Hamburger (sekarang berada dalam scope x-data yang sama dengan nav) -->
+    <button @click="open = !open" class="mc-hamburger" aria-label="Toggle Menu">
+        <svg x-show="!open" width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+        <svg x-show="open" width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+    </button>
+</div>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>

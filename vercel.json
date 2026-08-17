@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "buildCommand": "composer install --no-dev && php artisan config:cache && npm install && npm run build",
+  "outputDirectory": "public",
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "public/index.php"
+    }
+  ]
+}

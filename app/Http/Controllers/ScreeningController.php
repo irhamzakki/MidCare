@@ -3,11 +3,12 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\FiturPengguna; // Pastikan Model FiturPengguna sudah ada
+use App\Models\FiturPengguna;
+use App\Models\HasilClustering;
+use Symfony\Component\Process\Process;
 
 class ScreeningController extends Controller
 {
-    // Fungsi menampilkan halaman kuesioner/screening
     public function index()
     {
         $daftarPertanyaan = $this->getDaftarPertanyaan();
@@ -15,10 +16,8 @@ class ScreeningController extends Controller
         return view('screening', compact('daftarPertanyaan'));
     }
 
-    // Fungsi menyimpan data jawaban ke database
     public function store(Request $request)
     {
-        // 1. Validasi data profil dasar dan jawaban kuesioner
         $request->validate([
             'nama' => 'required|string|max:100',
             'usia' => 'required|integer',
@@ -28,7 +27,6 @@ class ScreeningController extends Controller
             'jawaban.*' => 'required|integer|between:1,5',
         ]);
 
-        // 2. Siapkan data yang akan disimpan
         $dataSaves = [
             'nama' => $request->nama,
             'usia' => $request->usia,
@@ -36,26 +34,80 @@ class ScreeningController extends Controller
             'orangtua' => $request->orangtua,
         ];
 
-        // 3. Gabungkan jawaban kuesioner ke dalam data penyimpanan
         foreach ($request->input('jawaban', []) as $kolom => $nilaiSkala) {
             $dataSaves[$kolom] = $nilaiSkala;
         }
 
-        // 4. Simpan ke database
-        FiturPengguna::create($dataSaves);
+        $fitur = FiturPengguna::create($dataSaves);
 
-        $hasilScreening = $this->buildScreeningResult($request, $this->getDaftarPertanyaan());
+        $cluster = null;
+        $risiko = null;
 
-        if (auth()->check()) {
-            return redirect()->route('screening')
-                ->with('success', 'Data screening berhasil disimpan! Anda dapat melihat hasil rinci di halaman Hasil.')
-                ->with('screening_result', $hasilScreening);
+        try {
+            $modelConfig = $this->loadModelConfig();
+            $modelInput = $this->buildModelInput($request, $modelConfig);
+            $python = base_path('.venv\\Scripts\\python.exe');
+            $script = base_path('Kmeans\\predict.py');
+            $payload = json_encode($modelInput, JSON_THROW_ON_ERROR);
+
+            $process = new Process([
+                $python,
+                $script,
+                $payload,
+            ]);
+
+            $process->setTimeout(30);
+            $process->run();
+
+            if ($process->isSuccessful()) {
+                $hasil = json_decode($process->getOutput(), true);
+
+                if (is_array($hasil) && !empty($hasil['success'])) {
+                    $cluster = (int) ($hasil['cluster'] ?? 0);
+                    $risiko = (string) ($hasil['risiko'] ?? 'Kategori risiko tidak ditemukan');
+
+                    if (auth()->check()) {
+                        HasilClustering::create([
+                            'user_id' => auth()->id(),
+                            'fitur_pengguna_id' => $fitur->id,
+                            'cluster' => $cluster,
+                            'tingkat_risiko' => $risiko,
+                        ]);
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            $cluster = null;
+            $risiko = null;
+        }
+
+        $hasilScreening = $this->buildScreeningResult(
+            $request,
+            $this->getDaftarPertanyaan()
+        );
+
+        if ($cluster !== null && $risiko !== null) {
+            $hasilScreening['ai'] = [
+                'cluster' => $cluster,
+                'tingkat_risiko' => $risiko,
+                'rekomendasi' => $this->rekomendasiRisk($risiko),
+            ];
+        } else {
+            $hasilScreening['ai'] = [
+                'cluster' => null,
+                'tingkat_risiko' => null,
+                'rekomendasi' => 'Prediksi model tidak tersedia saat ini, tetapi hasil jawaban masih tersimpan.',
+            ];
         }
 
         return redirect()->route('screening')
-            ->with('success', 'Data screening berhasil disimpan! Berikut hasil profiling singkat berdasarkan jawaban Anda.')
+            ->with('success', 'Data screening berhasil disimpan!')
             ->with('screening_result', $hasilScreening);
     }
+
+    // ===============================
+    // Seluruh method lama tetap dipertahankan
+    // ===============================
 
     private function getDaftarPertanyaan(): array
     {
@@ -98,7 +150,7 @@ class ScreeningController extends Controller
                 'percuma_perlihatkan_ayah' => 'Rasanya percuma memperlihatkan perasaan saya kepada Ayah.',
                 'ayah_tahu_marah' => 'Ayah tahu dan paham ketika saya sedang marah.',
                 'malu_bodoh_dengan_ayah' => 'Saya malu terlihat bodoh di depan Ayah.',
-                'ayah_hargai_pendapat' => 'Ayah menghargai pendapat saya.',
+                'ayah_hargai_pendapat' => 'Ayah menghargai pendapat atau pendapatan saya.',
                 'ayah_percaya_saya' => 'Ayah percaya kepada kemampuan saya.',
                 'tak_mau_merepotkan_ayah' => 'Saya tidak mau merepotkan Ayah.',
                 'ayah_bantu_pahami' => 'Ayah membantu saya memahami masalah yang saya hadapi.',
@@ -137,8 +189,96 @@ class ScreeningController extends Controller
                 'ibu_tidak_paham' => 'Ibu tidak paham dengan apa yang saya rasakan.',
                 'ibu_tidak_bisa_diandalkan' => 'Ibu tidak bisa diandalkan saat saya butuh bantuan.',
                 'ibu_peduli' => 'Ibu sangat peduli kepada saya.',
-            ],
+            ]
         ];
+    }
+
+    private function loadModelConfig(): array
+    {
+        $path = base_path('Kmeans/model_config.json');
+
+        if (!file_exists($path)) {
+            return [
+                'selected_features' => [
+                    'jenis kelamin',
+                    'ibu tidak bisa di andalkan',
+                    'orangtua',
+                    'gundah dg ibu',
+                    'marah dg ibu',
+                ],
+                'encoding' => [
+                    'jenis kelamin' => ['laki-laki' => 0, 'perempuan' => 1],
+                    'orangtua' => ['salah satu wafat' => 1, 'berpisah' => 2, 'lengkap' => 3],
+                ],
+                'cluster_mapping' => [
+                    '0' => 'Kondisi Baik / Risiko Rendah',
+                    '1' => 'Risiko Moderat',
+                    '2' => 'Risiko Tinggi / Perlu Perhatian',
+                ],
+            ];
+        }
+
+        $content = file_get_contents($path);
+
+        return json_decode($content, true) ?: [];
+    }
+
+    private function buildModelInput(Request $request, array $config): array
+    {
+        $jawaban = $request->input('jawaban', []);
+        $selectedFeatures = $config['selected_features'] ?? [];
+        $encoding = $config['encoding'] ?? [];
+        $modelInput = [];
+
+        foreach ($selectedFeatures as $feature) {
+            if ($feature === 'jenis kelamin') {
+                $value = strtolower(trim((string) $request->jenis_kelamin));
+                $modelInput[$feature] = $this->encodeModelValue($value, $encoding[$feature] ?? []);
+                continue;
+            }
+
+            if ($feature === 'orangtua') {
+                $value = strtolower(trim((string) $request->orangtua));
+                $modelInput[$feature] = $this->encodeModelValue($value, $encoding[$feature] ?? []);
+                continue;
+            }
+
+            $fieldMap = [
+                'ibu tidak bisa di andalkan' => 'ibu_tidak_bisa_diandalkan',
+                'gundah dg ibu' => 'gundah_dengan_ibu',
+                'marah dg ibu' => 'marah_dengan_ibu',
+            ];
+
+            $field = $fieldMap[$feature] ?? null;
+            $modelInput[$feature] = (int) ($jawaban[$field] ?? 3);
+        }
+
+        return $modelInput;
+    }
+
+    private function encodeModelValue(string $value, array $mapping): int
+    {
+        if (isset($mapping[$value])) {
+            return (int) $mapping[$value];
+        }
+
+        foreach ($mapping as $label => $encoded) {
+            if (strtolower($label) === $value) {
+                return (int) $encoded;
+            }
+        }
+
+        return 0;
+    }
+
+    private function rekomendasiRisk(string $risiko): string
+    {
+        return match ($risiko) {
+            'Kondisi Baik / Risiko Rendah' => 'Tetap jaga keseimbangan emosi dan dukungan sosial Anda.',
+            'Risiko Moderat' => 'Perkuat dukungan sosial dan pertimbangkan konsultasi jika gejala makin terasa.',
+            'Risiko Tinggi / Perlu Perhatian' => 'Disarankan untuk berkonsultasi dengan tenaga profesional kesehatan mental untuk evaluasi lebih lanjut.',
+            default => 'Pantau kondisi kesehatan mental Anda secara berkala.',
+        };
     }
 
     private function buildScreeningResult(Request $request, array $daftarPertanyaan): array
@@ -151,22 +291,26 @@ class ScreeningController extends Controller
         $jumlahJawaban = 0;
 
         foreach ($daftarPertanyaan as $kategori => $pertanyaans) {
+
             $nilaiKategori = [];
             $total = 0;
             $count = 0;
 
             foreach ($pertanyaans as $keyKolom => $teksPertanyaan) {
+
                 if (!array_key_exists($keyKolom, $jawaban)) {
                     continue;
                 }
 
-                $nilai = (int) $jawaban[$keyKolom];
+                $nilai = (int)$jawaban[$keyKolom];
+
                 $nilaiKategori[] = [
                     'kolom' => $keyKolom,
                     'teks' => $teksPertanyaan,
                     'nilai' => $nilai,
                     'persen' => round(($nilai / 5) * 100),
                 ];
+
                 $total += $nilai;
                 $count++;
                 $jumlahJawaban++;
@@ -177,18 +321,22 @@ class ScreeningController extends Controller
             }
 
             $rataKategori = round($total / $count, 2);
+
             $ringkasanKategori[] = [
                 'kategori' => $kategori,
                 'rata' => $rataKategori,
                 'label' => $this->labelForSkor($rataKategori),
                 'persen' => round(($rataKategori / 5) * 100),
             ];
+
             $detailJawaban[$kategori] = $nilaiKategori;
             $jumlahKategori++;
             $totalSkorKategori += $rataKategori;
         }
 
-        $nilaiTotal = $jumlahKategori > 0 ? round($totalSkorKategori / $jumlahKategori, 2) : 0;
+        $nilaiTotal = $jumlahKategori > 0
+            ? round($totalSkorKategori / $jumlahKategori, 2)
+            : 0;
 
         return [
             'profil' => [
@@ -208,39 +356,29 @@ class ScreeningController extends Controller
 
     private function labelForSkor(float $skor): string
     {
-        if ($skor >= 4) {
-            return 'Kuat';
-        }
-
-        if ($skor >= 3) {
-            return 'Cukup';
-        }
-
+        if ($skor >= 4) return 'Kuat';
+        if ($skor >= 3) return 'Cukup';
         return 'Perlu perhatian';
     }
 
     private function statusForSkor(float $skor): string
     {
-        if ($skor >= 4) {
+        if ($skor >= 4)
             return 'Profil Anda terlihat kuat dan stabil';
-        }
 
-        if ($skor >= 3.2) {
+        if ($skor >= 3.2)
             return 'Profil Anda cukup baik, tetapi ada area yang bisa diperkuat';
-        }
 
         return 'Profil Anda memerlukan perhatian lebih lanjut';
     }
 
     private function rekomendasiForSkor(float $skor): string
     {
-        if ($skor >= 4) {
+        if ($skor >= 4)
             return 'Tetap jaga keseimbangan emosi dan dukungan sosial.';
-        }
 
-        if ($skor >= 3.2) {
+        if ($skor >= 3.2)
             return 'Lanjutkan kebiasaan sehat dan perhatikan beberapa area yang masih perlu penguatan.';
-        }
 
         return 'Disarankan untuk berdiskusi dengan tenaga profesional atau memperkuat dukungan sosial.';
     }

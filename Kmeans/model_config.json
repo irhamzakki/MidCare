@@ -1,0 +1,27 @@
+{
+    "selected_features": [
+        "jenis kelamin",
+        "ibu tidak bisa di andalkan",
+        "orangtua",
+        "gundah dg ibu",
+        "marah dg ibu"
+    ],
+    "cluster_mapping": {
+        "0": "Kondisi Baik / Risiko Rendah",
+        "1": "Risiko Moderat",
+        "2": "Risiko Tinggi / Perlu Perhatian"
+    },
+    "encoding": {
+        "jenis kelamin": {
+            "laki-laki": 0,
+            "Laki-laki": 0,
+            "perempuan": 1,
+            "Perempuan": 1
+        },
+        "orangtua": {
+            "salah satu wafat": 1,
+            "berpisah": 2,
+            "lengkap": 3
+        }
+    }
+}

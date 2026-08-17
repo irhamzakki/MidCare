@@ -63,6 +63,39 @@
             color: #0f172a;
             font-weight: 700;
         }
+        /* Animasi: pilihan 1-5 muncul saat kursor mengarah ke soal */
+        .question-card { position: relative; transition: box-shadow .18s ease; }
+        .question-card:hover, .question-card:focus-within { box-shadow: 0 14px 40px rgba(2,6,23,.28); }
+
+        /* Kontainer pilihan yang disembunyikan secara default */
+        .choices {
+            max-height: 0; /* collapse */
+            opacity: 0;
+            overflow: hidden;
+            transform: translateY(-6px);
+            transition: max-height .32s ease, opacity .28s ease, transform .28s ease;
+            pointer-events: none;
+        }
+        /* Saat kartu soal di-hover, tunjukkan pilihan */
+        .question-card:hover .choices, .question-card:focus-within .choices {
+            max-height: 160px; /* cukup untuk 1 baris radio */
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        /* Animasi masuk per item dengan stagger kecil */
+        .choices .radio-step {
+            opacity: 0;
+            transform: translateY(8px) scale(.98);
+            transition: opacity .28s cubic-bezier(.2,.9,.2,1), transform .28s cubic-bezier(.2,.9,.2,1);
+        }
+        .question-card:hover .choices .radio-step { opacity: 1; transform: translateY(0) scale(1); }
+        .choices .radio-step:nth-child(1){ transition-delay: 0ms; }
+        .choices .radio-step:nth-child(2){ transition-delay: 30ms; }
+        .choices .radio-step:nth-child(3){ transition-delay: 60ms; }
+        .choices .radio-step:nth-child(4){ transition-delay: 90ms; }
+        .choices .radio-step:nth-child(5){ transition-delay: 120ms; }
         .section-card {
             box-shadow: 0 20px 60px rgba(15, 23, 42, .3);
         }
@@ -282,17 +315,23 @@
                         <p class="text-slate-600 mt-3">Jawab setiap pernyataan dengan jujur menggunakan skala 1 sampai 5.</p>
                     </div>
 
-                    @foreach($daftarPertanyaan as $kategori => $pertanyaans)
-                        <div class="mb-10">
-                            <div class="rounded-3xl bg-slate-50 p-5 mb-5 border border-slate-200">
-                                <h3 class="text-slate-900 font-semibold">{{ $kategori }}</h3>
-                            </div>
+                    @php $daftarPertanyaan = $daftarPertanyaan ?? []; @endphp
+                    @if(empty($daftarPertanyaan))
+                        <div class="text-center text-slate-500 py-8">
+                            Tidak ada pertanyaan yang tersedia saat ini.
+                        </div>
+                    @else
+                        @foreach($daftarPertanyaan as $kategori => $pertanyaans)
+                            <div class="mb-10">
+                                <div class="rounded-3xl bg-slate-50 p-5 mb-5 border border-slate-200">
+                                    <h3 class="text-slate-900 font-semibold">{{ $kategori }}</h3>
+                                </div>
 
                             <div class="space-y-5">
                                 @foreach($pertanyaans as $keyKolom => $teksPertanyaan)
-                                    <div class="rounded-[1.5rem] border border-slate-200 p-5 shadow-sm">
+                                    <div class="rounded-[1.5rem] border border-slate-200 p-5 shadow-sm question-card">
                                         <div class="text-slate-700 font-medium mb-4">{{ $teksPertanyaan }}</div>
-                                        <div class="grid gap-3 sm:grid-cols-5">
+                                        <div class="choices grid gap-3 sm:grid-cols-5">
                                             @for($i = 1; $i <= 5; $i++)
                                                 <label class="radio-step">
                                                     <input type="radio" name="jawaban[{{ $keyKolom }}]" value="{{ $i }}" required>
@@ -305,6 +344,7 @@
                             </div>
                         </div>
                     @endforeach
+                    @endif
 
                     <div class="rounded-3xl bg-slate-50 border border-slate-200 p-6 text-sm text-slate-600">
                         <div class="font-semibold text-slate-900 mb-2">Legenda:</div>
