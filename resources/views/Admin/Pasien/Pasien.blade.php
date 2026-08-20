@@ -288,10 +288,56 @@
             .hero-card h1 { font-size: 30px; }
             .search-box { width: 100%; }
         }
+
+        .alert-box {
+            padding: 16px 20px;
+            border-radius: 16px;
+            margin-bottom: 24px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: modalShow .3s ease;
+        }
+        .alert-success {
+            background: #dcfce7;
+            color: #15803d;
+            border: 1px solid #bbf7d0;
+        }
+        .alert-danger {
+            background: #fee2e2;
+            color: #b91c1c;
+            border: 1px solid #fecaca;
+        }
     </style>
 
     <div class="admin-page">
         <div class="admin-container">
+
+            @if(session('success'))
+                <div class="alert-box alert-success">
+                    <span>✓</span> {{ session('success') }}
+                </div>
+            @endif
+
+            @if(session('error'))
+                <div class="alert-box alert-danger">
+                    <span>⚠</span> {{ session('error') }}
+                </div>
+            @endif
+
+            @if($errors->any())
+                <div class="alert-box alert-danger">
+                    <div>
+                        <div style="font-weight:800; margin-bottom:4px;">Terjadi Kesalahan:</div>
+                        <ul style="margin:0; padding-left:20px;">
+                            @foreach($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                </div>
+            @endif
 
             <div class="hero-card">
                 <h1>Kelola Data Pasien</h1>
@@ -303,7 +349,7 @@
             </div>
 
             <div class="top-action">
-                <input type="text" class="search-box" placeholder="Cari nama pasien...">
+                <input type="text" id="patientSearchInput" class="search-box" placeholder="Cari nama, email, atau status..." value="{{ $search ?? '' }}" onkeyup="filterPatientTable()">
                 <button type="button" class="btn-primary" onclick="openModal()">
                     + Tambah Pasien
                 </button>
@@ -312,10 +358,10 @@
             <div class="table-card">
                 <div class="table-header">
                     <h2>Data Pasien</h2>
-                    <p>Daftar pasien yang terdaftar pada sistem MindCare.</p>
+                    <p>Daftar pasien yang terdaftar pada sistem MindCare (Total: <span id="patientTotalCount">{{ count($pasiens) }}</span> data).</p>
                 </div>
 
-                <table>
+                <table id="patientTable">
                     <thead>
                         <tr>
                             <th>No</th>
@@ -331,24 +377,23 @@
                     </thead>
                     <tbody>
                         @forelse ($pasiens as $index => $pasien)
-                            <tr>
-                                <td>{{ $index + 1 }}</td>
+                            <tr class="patient-row">
+                                <td class="row-index">{{ $index + 1 }}</td>
                                 <td>
-                                    <!-- Perbaikan Nama Class pembungkus profil pasien -->
                                     <div class="patient-info">
                                         <span class="avatar">
                                             {{ strtoupper(substr($pasien->nama, 0, 1)) }}
                                         </span>
                                         <div>
-                                            <strong>{{ $pasien->nama }}</strong>
+                                            <strong class="patient-name">{{ $pasien->nama }}</strong>
                                             <small>ID : PSN{{ str_pad($pasien->id, 4, '0', STR_PAD_LEFT) }}</small>
                                         </div>
                                     </div>
                                 </td>
-                                <td>{{ $pasien->email }}</td>
-                                <td>{{ $pasien->usia }}</td>
-                                <td>{{ $pasien->jenis_kelamin }}</td>
-                                <td>{{ $pasien->status }}</td>
+                                <td class="patient-email">{{ $pasien->email }}</td>
+                                <td>{{ $pasien->usia ? $pasien->usia . ' Thn' : '-' }}</td>
+                                <td>{{ $pasien->jenis_kelamin ?? '-' }}</td>
+                                <td class="patient-status-label">{{ $pasien->status ?? 'Umum' }}</td>
                                 <td>
                                     @if($pasien->status_screening == 'Sudah Screening')
                                         <span class="badge badge-green">Sudah Screening</span>
@@ -357,14 +402,14 @@
                                     @endif
                                 </td>
                                 <td>
-                                    @if($pasien->risiko_terakhir == 'Ringan')
-                                        <span class="badge badge-green">Ringan</span>
-                                    @elseif($pasien->risiko_terakhir == 'Sedang')
-                                        <span class="badge badge-yellow">Sedang</span>
-                                    @elseif($pasien->risiko_terakhir == 'Berat')
-                                        <span class="badge badge-red">Berat</span>
+                                    @if(str_contains(strtolower($pasien->risiko_terakhir ?? ''), 'rendah') || str_contains(strtolower($pasien->risiko_terakhir ?? ''), 'baik') || $pasien->risiko_terakhir == 'Ringan')
+                                        <span class="badge badge-green">{{ $pasien->risiko_terakhir }}</span>
+                                    @elseif(str_contains(strtolower($pasien->risiko_terakhir ?? ''), 'moderat') || $pasien->risiko_terakhir == 'Sedang')
+                                        <span class="badge badge-yellow">{{ $pasien->risiko_terakhir }}</span>
+                                    @elseif(str_contains(strtolower($pasien->risiko_terakhir ?? ''), 'tinggi') || str_contains(strtolower($pasien->risiko_terakhir ?? ''), 'perhatian') || $pasien->risiko_terakhir == 'Berat')
+                                        <span class="badge badge-red">{{ $pasien->risiko_terakhir }}</span>
                                     @else
-                                        <span class="badge" style="background:#f1f5f9; color:#475569;">Belum Ada</span>
+                                        <span class="badge" style="background:#f1f5f9; color:#475569;">{{ $pasien->risiko_terakhir ?? 'Belum Ada' }}</span>
                                     @endif
                                 </td>
                                 <td>
@@ -376,7 +421,7 @@
                                                 '{{ addslashes($pasien->nama) }}',
                                                 '{{ addslashes($pasien->email) }}',
                                                 '{{ $pasien->usia ?? '-' }}',
-                                                '{{ addslashes($pasien->jenis_kelamin) }}',
+                                                '{{ addslashes($pasien->jenis_kelamin ?? '-') }}',
                                                 '{{ addslashes($pasien->status ?? 'Umum') }}',
                                                 '{{ addslashes($pasien->status_screening ?? 'Belum Screening') }}',
                                                 '{{ addslashes($pasien->risiko_terakhir ?? 'Belum Ada') }}',
@@ -397,13 +442,13 @@
                                                 '{{ addslashes($pasien->nama) }}',
                                                 '{{ addslashes($pasien->email) }}',
                                                 '{{ $pasien->usia ?? '' }}',
-                                                '{{ addslashes($pasien->jenis_kelamin) }}',
+                                                '{{ addslashes($pasien->jenis_kelamin ?? 'Laki-laki') }}',
                                                 '{{ addslashes($pasien->status ?? 'Umum') }}'
                                             )">
                                             Edit
                                         </button>
 
-                                        <form method="POST" action="{{ route('Admin.Pasien.destroy', $pasien->id) }}" onsubmit="return confirm('Yakin ingin menghapus data pasien ini?')">
+                                        <form method="POST" action="{{ route('Admin.Pasien.destroy', $pasien->id) }}" onsubmit="return confirm('Yakin ingin menghapus data pasien {{ addslashes($pasien->nama) }} beserta akun loginnya?')">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="action-btn delete">
@@ -414,7 +459,7 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr>
+                            <tr id="emptyRow">
                                 <td colspan="9" style="text-align:center; padding:40px; color:#64748b;">
                                     Belum ada data pasien.
                                 </td>
@@ -439,36 +484,40 @@
                 @csrf
                 <div class="form-grid">
                     <div class="form-group">
-                        <label>Nama Pasien</label>
-                        <input type="text" name="nama" class="form-control" placeholder="Masukkan nama pasien" required>
+                        <label>Nama Pasien <span style="color:#ef4444;">*</span></label>
+                        <input type="text" name="nama" class="form-control" placeholder="Masukkan nama lengkap" required value="{{ old('nama') }}">
                     </div>
 
                     <div class="form-group">
-                        <label>Email</label>
-                        <input type="email" name="email" class="form-control" placeholder="Masukkan email pasien" required>
+                        <label>Email Login <span style="color:#ef4444;">*</span></label>
+                        <input type="email" name="email" class="form-control" placeholder="contoh: pasien@email.com" required value="{{ old('email') }}">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Password Akun (Opsional)</label>
+                        <input type="password" name="password" class="form-control" placeholder="Default: password">
                     </div>
 
                     <div class="form-group">
                         <label>Usia</label>
-                        <input type="number" name="usia" class="form-control" placeholder="Contoh : 18">
+                        <input type="number" name="usia" class="form-control" placeholder="Contoh : 20" value="{{ old('usia') }}">
                     </div>
 
                     <div class="form-group">
-                        <label>Jenis Kelamin</label>
+                        <label>Jenis Kelamin <span style="color:#ef4444;">*</span></label>
                         <select name="jenis_kelamin" class="form-control" required>
                             <option value="">Pilih Jenis Kelamin</option>
-                            <option value="Laki-laki">Laki-laki</option>
-                            <option value="Perempuan">Perempuan</option>
+                            <option value="Laki-laki" {{ old('jenis_kelamin') == 'Laki-laki' ? 'selected' : '' }}>Laki-laki</option>
+                            <option value="Perempuan" {{ old('jenis_kelamin') == 'Perempuan' ? 'selected' : '' }}>Perempuan</option>
                         </select>
                     </div>
 
                     <div class="form-group">
                         <label>Status</label>
                         <select name="status" class="form-control">
-                            <option value="Umum">Pilih Status</option>
-                            <option value="Siswa">Siswa</option>
-                            <option value="Mahasiswa">Mahasiswa</option>
-                            <option value="Umum">Umum</option>
+                            <option value="Umum" {{ old('status') == 'Umum' ? 'selected' : '' }}>Umum</option>
+                            <option value="Siswa" {{ old('status') == 'Siswa' ? 'selected' : '' }}>Siswa</option>
+                            <option value="Mahasiswa" {{ old('status') == 'Mahasiswa' ? 'selected' : '' }}>Mahasiswa</option>
                         </select>
                     </div>
                 </div>
@@ -494,13 +543,18 @@
                 @method('PUT')
                 <div class="form-grid">
                     <div class="form-group">
-                        <label>Nama Pasien</label>
+                        <label>Nama Pasien <span style="color:#ef4444;">*</span></label>
                         <input type="text" id="edit_nama" name="nama" class="form-control" required>
                     </div>
 
                     <div class="form-group">
-                        <label>Email</label>
+                        <label>Email Login <span style="color:#ef4444;">*</span></label>
                         <input type="email" id="edit_email" name="email" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Ganti Password (Kosongkan jika tidak diubah)</label>
+                        <input type="password" id="edit_password" name="password" class="form-control" placeholder="Biarkan kosong jika tetap">
                     </div>
 
                     <div class="form-group">
@@ -509,7 +563,7 @@
                     </div>
 
                     <div class="form-group">
-                        <label>Jenis Kelamin</label>
+                        <label>Jenis Kelamin <span style="color:#ef4444;">*</span></label>
                         <select id="edit_jenis_kelamin" name="jenis_kelamin" class="form-control" required>
                             <option value="Laki-laki">Laki-laki</option>
                             <option value="Perempuan">Perempuan</option>
@@ -519,9 +573,9 @@
                     <div class="form-group">
                         <label>Status</label>
                         <select id="edit_status" name="status" class="form-control">
+                            <option value="Umum">Umum</option>
                             <option value="Siswa">Siswa</option>
                             <option value="Mahasiswa">Mahasiswa</option>
-                            <option value="Umum">Umum</option>
                         </select>
                     </div>
                 </div>
@@ -595,7 +649,7 @@
     function openDetailModal(nama, email, usia, jenis_kelamin, status, screening, risiko, terdaftar) {
         document.getElementById('detail_nama').value = nama;
         document.getElementById('detail_email').value = email;
-        document.getElementById('detail_usia').value = usia + ' tahun';
+        document.getElementById('detail_usia').value = usia !== '-' ? usia + ' tahun' : '-';
         document.getElementById('detail_jenis_kelamin').value = jenis_kelamin;
         document.getElementById('detail_status').value = status;
         document.getElementById('detail_screening').value = screening;
@@ -613,6 +667,7 @@
         document.getElementById('formEditPasien').action = '{{ url("/admin/Pasien/Pasien") }}/' + id;
         document.getElementById('edit_nama').value = nama;
         document.getElementById('edit_email').value = email;
+        document.getElementById('edit_password').value = '';
         document.getElementById('edit_usia').value = usia;
         document.getElementById('edit_jenis_kelamin').value = jenis_kelamin;
         document.getElementById('edit_status').value = status;
@@ -622,6 +677,28 @@
 
     function closeEditModal() {
         document.getElementById('modalEdit').style.display = 'none';
+    }
+
+    function filterPatientTable() {
+        const input = document.getElementById('patientSearchInput');
+        const filter = input.value.toLowerCase().trim();
+        const rows = document.querySelectorAll('#patientTable tbody tr.patient-row');
+        let visibleCount = 0;
+
+        rows.forEach((row, idx) => {
+            const text = row.innerText.toLowerCase();
+            if (text.includes(filter)) {
+                row.style.display = '';
+                visibleCount++;
+                const indexCol = row.querySelector('.row-index');
+                if (indexCol) indexCol.textContent = visibleCount;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        const totalSpan = document.getElementById('patientTotalCount');
+        if (totalSpan) totalSpan.textContent = visibleCount;
     }
 
     window.onclick = function(event) {
