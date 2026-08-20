@@ -42,50 +42,69 @@ class PasienController extends Controller
         // Membuat akun login pasien
 
         $user = User::create([
-
-            'name'=>$request->nama,
-
-            'email'=>$request->email,
-
-            // password default
-            'password'=>Hash::make('pasien123'),
-
-            'role'=>'pasien'
-
+            'name' => $request->nama,
+            'email' => $request->email,
+            'password' => Hash::make($request->password ?? 'pasien123'),
+            'role' => 'pasien',
+            'email_verified_at' => now(),
         ]);
-
-
-
-
-        // Membuat biodata pasien
 
         Pasien::create([
-
-            'user_id'=>$user->id,
-
-            'nama'=>$request->nama,
-
-            'tanggal_lahir'=>$request->tanggal_lahir,
-
-            'jenis_kelamin'=>$request->jenis_kelamin,
-
-            'no_hp'=>$request->no_hp,
-
-            'alamat'=>$request->alamat,
-
-            'status_screening'=>'Belum Screening'
-
+            'nama' => $request->nama,
+            'email' => $request->email,
+            'usia' => $request->usia ?? 20,
+            'jenis_kelamin' => $request->jenis_kelamin,
+            'status' => $request->status ?? 'Umum',
+            'status_screening' => 'Belum Screening',
+            'risiko_terakhir' => null,
         ]);
 
-
-
         return redirect()
-            ->route('admin.pasien.index')
-            ->with(
-                'success',
-                'Pasien dan akun berhasil dibuat'
-            );
-
+            ->route('Admin.Pasien.Pasien')
+            ->with('success', 'Data pasien berhasil dibuat.');
     }
 
+    public function update(Request $request, string $id)
+    {
+        $pasien = Pasien::findOrFail($id);
+
+        $request->validate([
+            'nama' => 'required|string|max:255',
+            'email' => 'required|email|max:255',
+            'usia' => 'nullable|integer',
+            'jenis_kelamin' => 'required|in:Laki-laki,Perempuan',
+            'status' => 'nullable|in:Siswa,Mahasiswa,Umum',
+        ]);
+
+        $pasien->update([
+            'nama' => $request->nama,
+            'email' => $request->email,
+            'usia' => $request->usia,
+            'jenis_kelamin' => $request->jenis_kelamin,
+            'status' => $request->status ?? $pasien->status,
+        ]);
+
+        // Update corresponding user record if exists
+        User::where('email', $pasien->email)->update([
+            'name' => $request->nama,
+        ]);
+
+        return redirect()
+            ->route('Admin.Pasien.Pasien')
+            ->with('success', 'Data pasien berhasil diperbarui.');
+    }
+
+    public function destroy(string $id)
+    {
+        $pasien = Pasien::findOrFail($id);
+        $email = $pasien->email;
+        $pasien->delete();
+
+        // Optionally delete corresponding user
+        User::where('email', $email)->where('role', 'pasien')->delete();
+
+        return redirect()
+            ->route('Admin.Pasien.Pasien')
+            ->with('success', 'Data pasien berhasil dihapus.');
+    }
 }

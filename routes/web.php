@@ -70,15 +70,12 @@ Route::middleware('auth')->group(function () {
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth','role:pasien'])->prefix('pengguna')->name('pengguna.')->group(function () {
-    Route::get('/kuesioner', function () {
-        $fiturPenggunas = \App\Models\FiturPengguna::latest()->get();
-
-        return view('pengguna.kuesioner', compact('fiturPenggunas'));
-    })->name('kuesioner');
+    Route::get('/kuesioner', [KuesionerController::class, 'index'])->name('kuesioner');
     Route::get('/hasil', [HasilController::class, 'index'])->name('hasil');
     Route::get('/hasil/{id}', [HasilController::class, 'show'])->name('hasil.show');
-    Route::get('/riwayat', function () { return view('pengguna.riwayat'); })->name('riwayat');
+    Route::get('/riwayat', [HasilController::class, 'index'])->name('riwayat');
 });
+
 use App\Http\Controllers\Admin\PsikologController;
 
 Route::middleware(['auth','role:admin'])
@@ -124,9 +121,9 @@ Route::middleware(['auth','role:psikolog'])->prefix('psikolog')->name('psikolog.
 // ROUTES KHUSUS PASIEN (RBAC)
 Route::middleware(['auth','role:pasien'])->prefix('pasien')->name('pasien.')->group(function () {
     Route::get('/dashboard', [PasienDashboardController::class, 'index'])->name('dashboard');
-    Route::get('/tes', function () { return view('pasien.tes'); })->name('tes');
-    Route::get('/hasil', function () { return view('pasien.hasil'); })->name('hasil');
-    Route::get('/riwayat', function () { return view('pasien.riwayat'); })->name('riwayat');
+    Route::get('/tes', [ScreeningController::class, 'index'])->name('tes');
+    Route::get('/hasil', [HasilController::class, 'index'])->name('hasil');
+    Route::get('/riwayat', [HasilController::class, 'index'])->name('riwayat');
     Route::get('/rekomendasi', function () { return view('pasien.rekomendasi'); })->name('rekomendasi');
 });
 
@@ -140,7 +137,6 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('Ad
     
     // Dashboard Utama Admin
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-
 
     // Fitur Cek Kesehatan Mental (CekMel) - Panel Admin
     Route::prefix('CekMel')->name('CekMel.')->group(function () {
@@ -160,6 +156,8 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('Ad
     Route::prefix('Pasien')->name('Pasien.')->group(function () {
         Route::get('/Pasien', [PasienController::class, 'index'])->name('Pasien');
         Route::post('/Pasien', [PasienController::class, 'store'])->name('store');
+        Route::put('/Pasien/{id}', [PasienController::class, 'update'])->name('update');
+        Route::delete('/Pasien/{id}', [PasienController::class, 'destroy'])->name('destroy');
     });
 
     // Manajemen Psikolog
@@ -172,6 +170,8 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('Ad
         Route::get('/Artikel', [ArtikelController::class, 'index'])->name('Artikel');
         Route::get('/Tambah', [ArtikelController::class, 'create'])->name('Tambah');
         Route::post('/Simpan', [ArtikelController::class, 'store'])->name('store');
+        Route::put('/Update/{id}', [ArtikelController::class, 'update'])->name('update');
+        Route::delete('/Hapus/{id}', [ArtikelController::class, 'destroy'])->name('destroy');
     });
 
     // Manajemen User - dibuat oleh Admin
@@ -179,16 +179,15 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('Ad
     Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
     Route::post('/users', [UserController::class, 'store'])->name('users.store');
 
-    // Menu View Statis Tambahan Admin
-
-    Route::get('/kuesioner', [KuesionerController::class, 'index'])
-    ->name('admin.kuesioner.index');
-    Route::get('/kuesioner/{id}/detail',
-    [KuesionerController::class, 'show']
-)->name('pengguna.hasil-detail');
-    Route::get('/dataset', function () { return view('admin.dataset'); })->name('dataset');
-    Route::get('/laporan', function () { return view('admin.laporan'); })->name('laporan');
+    // Menu Data & Laporan Admin
+    Route::get('/kuesioner', [KuesionerController::class, 'index'])->name('kuesioner.index');
+    Route::get('/kuesioner/{id}/detail', [KuesionerController::class, 'show'])->name('kuesioner.detail');
+    Route::get('/dataset', [DashboardController::class, 'dataset'])->name('dataset');
+    Route::get('/laporan', [DashboardController::class, 'laporan'])->name('laporan');
 });
+
+// Alias for admin.kuesioner.index
+Route::middleware(['auth', 'role:admin'])->get('/admin/kuesioner-data', [KuesionerController::class, 'index'])->name('admin.kuesioner.index');
 
 
 /*

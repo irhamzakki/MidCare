@@ -1,14 +1,41 @@
 <x-app-layout>
-    <div class="min-h-screen bg-slate-50 py-16">
-        <div class="max-w-5xl mx-auto">
+    <style>
+        .page-wrapper {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f8fafc, #e0f2fe, #eef2ff);
+            padding: 24px;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            box-sizing: border-box;
+        }
+        @media (min-width: 1024px) {
+            .page-wrapper {
+                padding-left: 296px;
+                padding-top: 36px;
+                padding-bottom: 36px;
+                padding-right: 36px;
+            }
+        }
+        .page-container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+    </style>
+
+    <div class="page-wrapper">
+        <div class="page-container">
             <!-- Header -->
-            <div class="mb-10">
-                <a href="{{ route('pengguna.hasil') }}" class="text-blue-600 hover:text-blue-700 font-semibold mb-4 inline-flex items-center">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            <div class="mb-8">
+                @php
+                    $backUrl = (Auth::user()->role ?? '') === 'admin' 
+                        ? route('admin.kuesioner.index') 
+                        : (Route::has('pengguna.hasil') ? route('pengguna.hasil') : url()->previous());
+                @endphp
+                <a href="{{ $backUrl }}" class="text-sky-600 hover:text-sky-700 font-semibold mb-3 inline-flex items-center text-sm bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm transition hover:shadow">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
                     Kembali
                 </a>
-                <h1 class="text-4xl font-bold text-slate-900 mb-2">Detail Hasil Screening</h1>
-                <p class="text-slate-600">{{ $hasil->created_at->format('d F Y H:i') }}</p>
+                <h1 class="text-3xl font-extrabold text-slate-900 mt-2 mb-1 tracking-tight">Detail Hasil Screening</h1>
+                <p class="text-slate-500 text-sm">Waktu pemeriksaan: {{ $hasil->created_at->format('d F Y H:i') }}</p>
             </div>
 
             <!-- Ringkasan Status -->

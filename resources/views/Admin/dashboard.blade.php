@@ -341,33 +341,47 @@
                         <table>
                             <thead>
                                 <tr>
-                                    <th>Tanggal</th>
-                                    <th>Skor</th>
-                                    <th>Kategori</th>
-                                    <th>Status</th>
+                                    <th>Waktu & Responden</th>
+                                    <th>Cluster AI</th>
+                                    <th>Kategori Risiko</th>
+                                    <th>Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr>
-                                    <td>06 Juni 2026</td>
-                                    <td>72</td>
-                                    <td><span class="badge badge-yellow">Sedang</span></td>
-                                    <td>Perlu pemantauan</td>
-                                </tr>
-
-                                <tr>
-                                    <td>30 Mei 2026</td>
-                                    <td>58</td>
-                                    <td><span class="badge badge-green">Ringan</span></td>
-                                    <td>Stabil</td>
-                                </tr>
-
-                                <tr>
-                                    <td>22 Mei 2026</td>
-                                    <td>81</td>
-                                    <td><span class="badge badge-red">Tinggi</span></td>
-                                    <td>Butuh tindak lanjut</td>
-                                </tr>
+                                @forelse($recentScreenings as $sc)
+                                    @php
+                                        $badgeClass = match((int) $sc->cluster) {
+                                            0 => 'badge-green',
+                                            1 => 'badge-yellow',
+                                            2 => 'badge-red',
+                                            default => 'badge-yellow'
+                                        };
+                                        $namaResponden = optional($sc->fiturPengguna)->nama ?? optional($sc->user)->name ?? 'Anonim';
+                                    @endphp
+                                    <tr>
+                                        <td>
+                                            <div class="font-bold text-slate-900">{{ $namaResponden }}</div>
+                                            <div class="text-xs text-slate-400">{{ $sc->created_at->format('d M Y H:i') }}</div>
+                                        </td>
+                                        <td>
+                                            <span class="font-extrabold text-sky-600">Cluster {{ $sc->cluster }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge {{ $badgeClass }}">{{ $sc->tingkat_risiko }}</span>
+                                        </td>
+                                        <td>
+                                            <a href="{{ route('pengguna.hasil.show', $sc->id) }}" class="inline-flex items-center text-xs font-bold text-sky-600 hover:text-sky-700 bg-sky-50 px-3 py-1.5 rounded-lg border border-sky-200 transition">
+                                                Detail →
+                                            </a>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="4" class="text-center py-8 text-slate-400 italic">
+                                            Belum ada data screening yang masuk.
+                                        </td>
+                                    </tr>
+                                @endforelse
                             </tbody>
                         </table>
                     </div>

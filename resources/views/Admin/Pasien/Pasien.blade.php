@@ -368,10 +368,49 @@
                                     @endif
                                 </td>
                                 <td>
-                                    <a href="#" class="action-btn detail">Detail</a>
-                                    <a href="#" class="action-btn screening">Screening</a>
-                                    <a href="#" class="action-btn edit">Edit</a>
-                                    <a href="#" class="action-btn delete">Hapus</a>
+                                    <div class="action-wrapper" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+                                        <button
+                                            type="button"
+                                            class="action-btn detail"
+                                            onclick="openDetailModal(
+                                                '{{ addslashes($pasien->nama) }}',
+                                                '{{ addslashes($pasien->email) }}',
+                                                '{{ $pasien->usia ?? '-' }}',
+                                                '{{ addslashes($pasien->jenis_kelamin) }}',
+                                                '{{ addslashes($pasien->status ?? 'Umum') }}',
+                                                '{{ addslashes($pasien->status_screening ?? 'Belum Screening') }}',
+                                                '{{ addslashes($pasien->risiko_terakhir ?? 'Belum Ada') }}',
+                                                '{{ $pasien->created_at ? $pasien->created_at->format('d M Y H:i') : '-' }}'
+                                            )">
+                                            Detail
+                                        </button>
+
+                                        <a href="{{ route('Admin.CekMel.CekMel') }}" class="action-btn screening">
+                                            Screening
+                                        </a>
+
+                                        <button 
+                                            type="button" 
+                                            class="action-btn edit"
+                                            onclick="openEditModal(
+                                                '{{ $pasien->id }}',
+                                                '{{ addslashes($pasien->nama) }}',
+                                                '{{ addslashes($pasien->email) }}',
+                                                '{{ $pasien->usia ?? '' }}',
+                                                '{{ addslashes($pasien->jenis_kelamin) }}',
+                                                '{{ addslashes($pasien->status ?? 'Umum') }}'
+                                            )">
+                                            Edit
+                                        </button>
+
+                                        <form method="POST" action="{{ route('Admin.Pasien.destroy', $pasien->id) }}" onsubmit="return confirm('Yakin ingin menghapus data pasien ini?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="action-btn delete">
+                                                Hapus
+                                            </button>
+                                        </form>
+                                    </div>
                                 </td>
                             </tr>
                         @empty
@@ -416,7 +455,7 @@
 
                     <div class="form-group">
                         <label>Jenis Kelamin</label>
-                        <select name="jenis_kelamin" class="form-control">
+                        <select name="jenis_kelamin" class="form-control" required>
                             <option value="">Pilih Jenis Kelamin</option>
                             <option value="Laki-laki">Laki-laki</option>
                             <option value="Perempuan">Perempuan</option>
@@ -426,7 +465,7 @@
                     <div class="form-group">
                         <label>Status</label>
                         <select name="status" class="form-control">
-                            <option value="">Pilih Status</option>
+                            <option value="Umum">Pilih Status</option>
                             <option value="Siswa">Siswa</option>
                             <option value="Mahasiswa">Mahasiswa</option>
                             <option value="Umum">Umum</option>
@@ -442,6 +481,108 @@
         </div>
     </div>
 
+    <!-- Modal Edit Pasien -->
+    <div id="modalEdit" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Edit Data Pasien</h2>
+                <button type="button" class="close-btn" onclick="closeEditModal()">✕</button>
+            </div>
+
+            <form id="formEditPasien" method="POST" action="">
+                @csrf
+                @method('PUT')
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Nama Pasien</label>
+                        <input type="text" id="edit_nama" name="nama" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="edit_email" name="email" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Usia</label>
+                        <input type="number" id="edit_usia" name="usia" class="form-control">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Jenis Kelamin</label>
+                        <select id="edit_jenis_kelamin" name="jenis_kelamin" class="form-control" required>
+                            <option value="Laki-laki">Laki-laki</option>
+                            <option value="Perempuan">Perempuan</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select id="edit_status" name="status" class="form-control">
+                            <option value="Siswa">Siswa</option>
+                            <option value="Mahasiswa">Mahasiswa</option>
+                            <option value="Umum">Umum</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn-cancel" onclick="closeEditModal()">Batal</button>
+                    <button type="submit" class="btn-primary">Perbarui Pasien</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Detail Pasien -->
+    <div id="modalDetail" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Detail Informasi Pasien</h2>
+                <button type="button" class="close-btn" onclick="closeDetailModal()">✕</button>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Nama Pasien</label>
+                    <input type="text" id="detail_nama" class="form-control" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="text" id="detail_email" class="form-control" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Usia</label>
+                    <input type="text" id="detail_usia" class="form-control" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Jenis Kelamin</label>
+                    <input type="text" id="detail_jenis_kelamin" class="form-control" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <input type="text" id="detail_status" class="form-control" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Status Screening</label>
+                    <input type="text" id="detail_screening" class="form-control" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Risiko Terakhir</label>
+                    <input type="text" id="detail_risiko" class="form-control" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Terdaftar Sejak</label>
+                    <input type="text" id="detail_terdaftar" class="form-control" readonly>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn-cancel" onclick="closeDetailModal()">Tutup</button>
+            </div>
+        </div>
+    </div>
+
     <script>
     function openModal() {
         document.getElementById('modalPasien').style.display = 'flex';
@@ -451,10 +592,50 @@
         document.getElementById('modalPasien').style.display = 'none';
     }
 
+    function openDetailModal(nama, email, usia, jenis_kelamin, status, screening, risiko, terdaftar) {
+        document.getElementById('detail_nama').value = nama;
+        document.getElementById('detail_email').value = email;
+        document.getElementById('detail_usia').value = usia + ' tahun';
+        document.getElementById('detail_jenis_kelamin').value = jenis_kelamin;
+        document.getElementById('detail_status').value = status;
+        document.getElementById('detail_screening').value = screening;
+        document.getElementById('detail_risiko').value = risiko;
+        document.getElementById('detail_terdaftar').value = terdaftar;
+
+        document.getElementById('modalDetail').style.display = 'flex';
+    }
+
+    function closeDetailModal() {
+        document.getElementById('modalDetail').style.display = 'none';
+    }
+
+    function openEditModal(id, nama, email, usia, jenis_kelamin, status) {
+        document.getElementById('formEditPasien').action = '{{ url("/admin/Pasien/Pasien") }}/' + id;
+        document.getElementById('edit_nama').value = nama;
+        document.getElementById('edit_email').value = email;
+        document.getElementById('edit_usia').value = usia;
+        document.getElementById('edit_jenis_kelamin').value = jenis_kelamin;
+        document.getElementById('edit_status').value = status;
+
+        document.getElementById('modalEdit').style.display = 'flex';
+    }
+
+    function closeEditModal() {
+        document.getElementById('modalEdit').style.display = 'none';
+    }
+
     window.onclick = function(event) {
         let modal = document.getElementById('modalPasien');
+        let modalEdit = document.getElementById('modalEdit');
+        let modalDetail = document.getElementById('modalDetail');
         if (event.target == modal) {
             modal.style.display = "none";
+        }
+        if (event.target == modalEdit) {
+            modalEdit.style.display = "none";
+        }
+        if (event.target == modalDetail) {
+            modalDetail.style.display = "none";
         }
     }
     </script>

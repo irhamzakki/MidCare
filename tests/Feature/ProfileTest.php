@@ -40,7 +40,7 @@ class ProfileTest extends TestCase
             ->get('/pengguna/kuesioner');
 
         $response->assertOk()
-            ->assertViewHas('fiturPenggunas');
+            ->assertViewHas('fiturPengguna');
     }
 
     public function test_profile_information_can_be_updated(): void

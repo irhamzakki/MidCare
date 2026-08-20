@@ -46,8 +46,8 @@ class ScreeningController extends Controller
         try {
             $modelConfig = $this->loadModelConfig();
             $modelInput = $this->buildModelInput($request, $modelConfig);
-            $python = base_path('.venv\\Scripts\\python.exe');
-            $script = base_path('Kmeans\\predict.py');
+            $python = $this->getPythonBinary();
+            $script = base_path('Kmeans/predict.py');
             $payload = json_encode($modelInput, JSON_THROW_ON_ERROR);
 
             $process = new Process([
@@ -66,12 +66,49 @@ class ScreeningController extends Controller
                     $cluster = (int) ($hasil['cluster'] ?? 0);
                     $risiko = (string) ($hasil['risiko'] ?? 'Kategori risiko tidak ditemukan');
 
+                    // Selalu simpan ke HasilClustering (baik login maupun tamu)
+                    $userId = auth()->check() ? auth()->id() : null;
+                    HasilClustering::create([
+                        'user_id' => $userId,
+                        'fitur_pengguna_id' => $fitur->id,
+                        'cluster' => $cluster,
+                        'tingkat_risiko' => $risiko,
+                    ]);
+
+                    // Sinkronisasi data ke tabel Pasien untuk Dashboard & Laporan
                     if (auth()->check()) {
-                        HasilClustering::create([
-                            'user_id' => auth()->id(),
-                            'fitur_pengguna_id' => $fitur->id,
-                            'cluster' => $cluster,
-                            'tingkat_risiko' => $risiko,
+                        $user = auth()->user();
+                        $pasien = \App\Models\Pasien::where('email', $user->email)->first();
+                        if ($pasien) {
+                            $pasien->update([
+                                'status_screening' => 'Sudah Screening',
+                                'risiko_terakhir' => $risiko,
+                                'usia' => $request->usia ?? $pasien->usia,
+                                'jenis_kelamin' => $request->jenis_kelamin ?? $pasien->jenis_kelamin,
+                            ]);
+                        } else {
+                            \App\Models\Pasien::create([
+                                'nama' => $request->nama ?? $user->name,
+                                'email' => $user->email,
+                                'usia' => $request->usia,
+                                'jenis_kelamin' => $request->jenis_kelamin,
+                                'status' => 'Mahasiswa',
+                                'status_screening' => 'Sudah Screening',
+                                'risiko_terakhir' => $risiko,
+                            ]);
+                        }
+                    } else {
+                        // Responden Tamu / Publik
+                        $cleanName = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', (string)$request->nama));
+                        $guestEmail = ($cleanName ?: 'guest') . rand(100, 9999) . '@guest.mindcare.com';
+                        \App\Models\Pasien::create([
+                            'nama' => $request->nama,
+                            'email' => $guestEmail,
+                            'usia' => $request->usia,
+                            'jenis_kelamin' => $request->jenis_kelamin,
+                            'status' => 'Umum',
+                            'status_screening' => 'Sudah Screening',
+                            'risiko_terakhir' => $risiko,
                         ]);
                     }
                 }
@@ -100,8 +137,8 @@ class ScreeningController extends Controller
             ];
         }
 
-        return redirect()->route('screening')
-            ->with('success', 'Data screening berhasil disimpan!')
+        return redirect()->back()
+            ->with('success', 'Data screening berhasil disimpan dan dianalisis oleh model AI!')
             ->with('screening_result', $hasilScreening);
     }
 
@@ -109,7 +146,7 @@ class ScreeningController extends Controller
     // Seluruh method lama tetap dipertahankan
     // ===============================
 
-    private function getDaftarPertanyaan(): array
+    public function getDaftarPertanyaan(): array
     {
         return [
             'Karakter & Regulasi Emosi' => [
@@ -381,5 +418,25 @@ class ScreeningController extends Controller
             return 'Lanjutkan kebiasaan sehat dan perhatikan beberapa area yang masih perlu penguatan.';
 
         return 'Disarankan untuk berdiskusi dengan tenaga profesional atau memperkuat dukungan sosial.';
+    }
+
+    private function getPythonBinary(): string
+    {
+        $custom = env('PYTHON_BINARY');
+        if (!empty($custom)) {
+            return $custom;
+        }
+
+        $winVenv = base_path('.venv/Scripts/python.exe');
+        if (file_exists($winVenv)) {
+            return $winVenv;
+        }
+
+        $unixVenv = base_path('.venv/bin/python');
+        if (file_exists($unixVenv)) {
+            return $unixVenv;
+        }
+
+        return (PHP_OS_FAMILY === 'Windows') ? 'python' : 'python3';
     }
 }

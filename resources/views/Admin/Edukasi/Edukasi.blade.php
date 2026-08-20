@@ -350,14 +350,48 @@
                                     @endif
                                 </td>
                                 <td>
-                                    <a href="#" class="action-btn detail">Detail</a>
-                                    <a href="#" class="action-btn edit">Edit</a>
-                                    <a href="#" class="action-btn delete">Hapus</a>
+                                    <div class="action-wrapper" style="display:flex; gap:8px; align-items:center;">
+                                        <button
+                                            type="button"
+                                            class="action-btn detail"
+                                            onclick="openDetailModal(
+                                                '{{ addslashes($edukasi->judul) }}',
+                                                '{{ addslashes($edukasi->kategori) }}',
+                                                '{{ addslashes($edukasi->ringkasan ?? '') }}',
+                                                `{{ addslashes($edukasi->narasi) }}`,
+                                                '{{ addslashes($edukasi->status) }}'
+                                            )">
+                                            Detail
+                                        </button>
+
+                                        <button 
+                                            type="button" 
+                                            class="action-btn edit"
+                                            onclick="openEditModal(
+                                                '{{ $edukasi->id }}',
+                                                '{{ addslashes($edukasi->judul) }}',
+                                                '{{ addslashes($edukasi->kategori) }}',
+                                                '{{ addslashes($edukasi->ringkasan ?? '') }}',
+                                                `{{ addslashes($edukasi->narasi) }}`,
+                                                '{{ addslashes($edukasi->status) }}',
+                                                '{{ addslashes($edukasi->icon ?? '') }}'
+                                            )">
+                                            Edit
+                                        </button>
+
+                                        <form method="POST" action="{{ route('Admin.Edukasi.destroy', $edukasi->id) }}" onsubmit="return confirm('Yakin ingin menghapus data edukasi ini?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="action-btn delete">
+                                                Hapus
+                                            </button>
+                                        </form>
+                                    </div>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" style="text-align:center; padding:40px; color:#64748b;">
+                                <td colspan="6" style="text-align:center; padding:40px; color:#64748b;">
                                     Belum ada data edukasi.
                                 </td>
                             </tr>
@@ -369,7 +403,7 @@
         </div>
     </div>
 
-    <!-- Modal Tambah Pasien -->
+    <!-- Modal Tambah Edukasi -->
     <div id="modalPasien" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
@@ -422,6 +456,97 @@
         </div>
     </div>
 
+    <!-- Modal Edit Edukasi -->
+    <div id="modalEdit" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Edit Data Edukasi</h2>
+                <button type="button" class="close-btn" onclick="closeEditModal()">✕</button>
+            </div>
+
+            <form id="formEditEdukasi" method="POST" action="">
+                @csrf
+                @method('PUT')
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Judul Edukasi</label>
+                        <input type="text" id="edit_judul" name="judul" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Kategori</label>
+                        <input type="text" id="edit_kategori" name="kategori" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Ringkasan</label>
+                        <input type="text" id="edit_ringkasan" name="ringkasan" class="form-control">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Isi Narasi</label>
+                        <textarea id="edit_narasi" name="narasi" class="form-control" rows="5" required></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select id="edit_status" name="status" class="form-control">
+                            <option value="aktif">Aktif</option>
+                            <option value="nonaktif">Nonaktif</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Icon</label>
+                        <input type="text" id="edit_icon" name="icon" class="form-control">
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn-cancel" onclick="closeEditModal()">Batal</button>
+                    <button type="submit" class="btn-primary">Perbarui Edukasi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Detail Edukasi -->
+    <div id="modalDetail" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Detail Edukasi</h2>
+                <button type="button" class="close-btn" onclick="closeDetailModal()">✕</button>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Judul Edukasi</label>
+                    <input type="text" id="detail_judul" class="form-control" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Kategori</label>
+                    <input type="text" id="detail_kategori" class="form-control" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Ringkasan</label>
+                    <input type="text" id="detail_ringkasan" class="form-control" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <input type="text" id="detail_status" class="form-control" readonly>
+                </div>
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label>Isi Narasi</label>
+                    <textarea id="detail_narasi" class="form-control" rows="6" readonly></textarea>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn-cancel" onclick="closeDetailModal()">Tutup</button>
+            </div>
+        </div>
+    </div>
+
     <script>
     function openModal() {
         document.getElementById('modalPasien').style.display = 'flex';
@@ -431,10 +556,48 @@
         document.getElementById('modalPasien').style.display = 'none';
     }
 
+    function openDetailModal(judul, kategori, ringkasan, narasi, status) {
+        document.getElementById('detail_judul').value = judul;
+        document.getElementById('detail_kategori').value = kategori;
+        document.getElementById('detail_ringkasan').value = ringkasan;
+        document.getElementById('detail_narasi').value = narasi;
+        document.getElementById('detail_status').value = status;
+
+        document.getElementById('modalDetail').style.display = 'flex';
+    }
+
+    function closeDetailModal() {
+        document.getElementById('modalDetail').style.display = 'none';
+    }
+
+    function openEditModal(id, judul, kategori, ringkasan, narasi, status, icon) {
+        document.getElementById('formEditEdukasi').action = '{{ url("/admin/Edukasi/Edukasi") }}/' + id;
+        document.getElementById('edit_judul').value = judul;
+        document.getElementById('edit_kategori').value = kategori;
+        document.getElementById('edit_ringkasan').value = ringkasan;
+        document.getElementById('edit_narasi').value = narasi;
+        document.getElementById('edit_status').value = status;
+        document.getElementById('edit_icon').value = icon;
+
+        document.getElementById('modalEdit').style.display = 'flex';
+    }
+
+    function closeEditModal() {
+        document.getElementById('modalEdit').style.display = 'none';
+    }
+
     window.onclick = function(event) {
         let modal = document.getElementById('modalPasien');
+        let modalEdit = document.getElementById('modalEdit');
+        let modalDetail = document.getElementById('modalDetail');
         if (event.target == modal) {
             modal.style.display = "none";
+        }
+        if (event.target == modalEdit) {
+            modalEdit.style.display = "none";
+        }
+        if (event.target == modalDetail) {
+            modalDetail.style.display = "none";
         }
     }
     </script>

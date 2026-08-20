@@ -272,7 +272,16 @@
     <nav :class="{ 'open': open }" class="mc-sidebar" id="sidebar">
 
         <div class="mc-sidebar-top">
-            <a href="{{ route('Admin.dashboard') }}" class="mc-logo">
+            @php
+                $role = strtolower(Auth::user()->role ?? '');
+                $logoUrl = match($role) {
+                    'admin' => route('Admin.dashboard'),
+                    'psikolog' => route('psikolog.dashboard'),
+                    'pasien' => route('pasien.dashboard'),
+                    default => route('home'),
+                };
+            @endphp
+            <a href="{{ $logoUrl }}" class="mc-logo">
                 <div class="mc-logo-box">
                     <img src="{{ asset('images/logo.png') }}" alt="Logo">
                 </div>
@@ -280,8 +289,6 @@
             </a>
 
             <div class="mc-menu">
-                @php $role = strtolower(Auth::user()->role ?? ''); @endphp
-
                 {{-- Menu Admin --}}
                 @if($role === 'admin')
                     <a href="{{ route('Admin.dashboard') }}"
@@ -290,26 +297,36 @@
                     </a>
 
                     <a href="{{ route('Admin.Pasien.Pasien') }}"
-                       class="mc-link {{ request()->routeIs('Admin.Pasien.Pasien') ? 'active' : '' }}">
+                       class="mc-link {{ request()->routeIs('Admin.Pasien.*') ? 'active' : '' }}">
                         <span>Kelola Pasien</span>
                     </a>
 
-                    <a href="{{ route('Admin.Psikolog.index') ?? '#' }}"
-                       class="mc-link {{ request()->routeIs('Admin.Psikolog.index') ? 'active' : '' }}">
+                    <a href="{{ route('Admin.Psikolog.index') }}"
+                       class="mc-link {{ request()->routeIs('Admin.Psikolog.*') ? 'active' : '' }}">
                         <span>Kelola Psikolog</span>
                     </a>
 
-                    <a href="{{ route('Admin.users') ?? '#' }}"
-                       class="mc-link {{ request()->routeIs('Admin.users') ? 'active' : '' }}">
+                    <a href="{{ route('Admin.users') }}"
+                       class="mc-link {{ request()->routeIs('Admin.users*') ? 'active' : '' }}">
                         <span>Kelola User</span>
                     </a>
 
-                    <a href="{{ route('pengguna.kuesioner') ?? '#' }}"
-                       class="mc-link {{ request()->routeIs('pengguna.kuesioner') ? 'active' : '' }}">
-                        <span>Kelola Kuesioner</span>
+                    <a href="{{ route('Admin.Edukasi.Edukasi') }}"
+                       class="mc-link {{ request()->routeIs('Admin.Edukasi.*') ? 'active' : '' }}">
+                        <span>Kelola Edukasi</span>
                     </a>
 
-                    <a href="{{ route('Admin.laporan') ?? '#' }}"
+                    <a href="{{ route('Admin.Artikel.Artikel') }}"
+                       class="mc-link {{ request()->routeIs('Admin.Artikel.*') ? 'active' : '' }}">
+                        <span>Kelola Artikel</span>
+                    </a>
+
+                    <a href="{{ route('admin.kuesioner.index') }}"
+                       class="mc-link {{ request()->routeIs('admin.kuesioner.*') || request()->routeIs('pengguna.hasil-detail') ? 'active' : '' }}">
+                        <span>Data Kuesioner</span>
+                    </a>
+
+                    <a href="{{ route('Admin.laporan') }}"
                        class="mc-link {{ request()->routeIs('Admin.laporan') ? 'active' : '' }}">
                         <span>Statistik / Laporan</span>
                     </a>

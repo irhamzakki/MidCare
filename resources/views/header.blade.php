@@ -246,8 +246,16 @@
         <div class="navbar-action">
 
             @auth
-
-                <a href="{{ url('/Admin/dashboard') }}"
+                @php
+                    $role = strtolower(Auth::user()->role ?? '');
+                    $dashboardUrl = match($role) {
+                        'admin' => route('Admin.dashboard'),
+                        'psikolog' => route('psikolog.dashboard'),
+                        'pasien' => route('pasien.dashboard'),
+                        default => url('/'),
+                    };
+                @endphp
+                <a href="{{ $dashboardUrl }}"
                    class="btn-dashboard">
                     Dashboard
                 </a>

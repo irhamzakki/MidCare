@@ -171,9 +171,9 @@
                             berinteraksi, dan menghadapi tekanan hidup sehari-hari.
                         </p>
 
-                        <a href="#" class="font-extrabold text-cyan-600 hover:text-cyan-800">
+                        <button type="button" onclick="bacaArtikel('Apa Itu Kesehatan Mental dan Mengapa Penting?', 'Mental Health', 'Kesehatan mental mencakup kesejahteraan emosional, psikologis, dan sosial seseorang. Hal ini memengaruhi cara kita berpikir, merasakan sesuatu, serta mengambil keputusan sehari-hari. Menjaga kesehatan mental sama pentingnya dengan menjaga kesehatan fisik karena memengaruhi produktivitas, hubungan antarpribadi, dan ketahanan dalam menghadapi cobaan hidup.', '🧠')" class="font-extrabold text-cyan-600 hover:text-cyan-800 bg-transparent border-0 cursor-pointer p-0 text-left">
                             Baca Selengkapnya →
-                        </a>
+                        </button>
                     </div>
                 </article>
 
@@ -194,9 +194,9 @@
                             sulit fokus, dan menurunnya semangat beraktivitas.
                         </p>
 
-                        <a href="#" class="font-extrabold text-orange-500 hover:text-orange-700">
+                        <button type="button" onclick="bacaArtikel('Tanda Stres yang Sering Tidak Disadari', 'Stres Remaja', 'Banyak individu tidak menyadari bahwa kelelahan kronis, perubahan pola makan, mudah marah atas hal-hal kecil, dan isolasi sosial merupakan sinyal awal dari stres berkepanjangan. Mengenali tanda-tanda ini sedini mungkin memungkinkan kita untuk mengambil jeda dan memulihkan energi sebelum berlanjut ke tahap kelelahan mental (burnout).', '⚠️')" class="font-extrabold text-orange-500 hover:text-orange-700 bg-transparent border-0 cursor-pointer p-0 text-left">
                             Baca Selengkapnya →
-                        </a>
+                        </button>
                     </div>
                 </article>
 
@@ -217,9 +217,9 @@
                             tekanan emosional dan membuka jalan mencari solusi.
                         </p>
 
-                        <a href="#" class="font-extrabold text-purple-600 hover:text-purple-800">
+                        <button type="button" onclick="bacaArtikel('Mengapa Bercerita Bisa Membantu?', 'Konseling', 'Mengekspresikan apa yang dirasakan melalui kata-kata membantu otak mengorganisir emosi yang kacau (proses affect labeling). Saat kita bercerita kepada konselor, psikolog, atau sahabat, beban emosional terasa lebih ringan dan kita sering kali menemukan sudut pandang baru yang lebih objektif dalam menyelesaikan masalah.', '💬')" class="font-extrabold text-purple-600 hover:text-purple-800 bg-transparent border-0 cursor-pointer p-0 text-left">
                             Baca Selengkapnya →
-                        </a>
+                        </button>
                     </div>
                 </article>
 
@@ -240,9 +240,9 @@
                             dapat membantu menjaga kestabilan mental.
                         </p>
 
-                        <a href="#" class="font-extrabold text-emerald-600 hover:text-emerald-800">
+                        <button type="button" onclick="bacaArtikel('Kebiasaan Kecil untuk Menjaga Mental', 'Self Care', 'Self care tidak harus rumit atau mahal. Memulai hari dengan segelas air, berjalan kaki 15 menit, mendengarkan musik yang menenangkan, serta menetapkan batasan (boundaries) dalam relasi sosial adalah bentuk perawatan diri yang sangat ampuh membangun ketahanan mental sehari-hari.', '🌱')" class="font-extrabold text-emerald-600 hover:text-emerald-800 bg-transparent border-0 cursor-pointer p-0 text-left">
                             Baca Selengkapnya →
-                        </a>
+                        </button>
                     </div>
                 </article>
 
@@ -263,9 +263,9 @@
                             dan kemampuan seseorang dalam mengelola tekanan.
                         </p>
 
-                        <a href="#" class="font-extrabold text-blue-600 hover:text-blue-800">
+                        <button type="button" onclick="bacaArtikel('Hubungan Tidur dengan Kesehatan Mental', 'Pola Tidur', 'Saat tidur, otak melakukan proses detoksifikasi dan konsolidasi memori emosional. Kurang tidur kronis terbukti meningkatkan reaktivitas amigdala terhadap rangsangan negatif hingga 60%, membuat seseorang mudah panik, cemas, dan kehilangan fokus. Prioritaskan tidur berkualitas 7-8 jam per malam.', '🌙')" class="font-extrabold text-blue-600 hover:text-blue-800 bg-transparent border-0 cursor-pointer p-0 text-left">
                             Baca Selengkapnya →
-                        </a>
+                        </button>
                     </div>
                 </article>
 
@@ -286,15 +286,41 @@
                             didengarkan, dan tidak sendirian saat menghadapi masalah.
                         </p>
 
-                        <a href="#" class="font-extrabold text-rose-600 hover:text-rose-800">
+                        <button type="button" onclick="bacaArtikel('Peran Keluarga dan Teman dalam Menjaga Mental', 'Dukungan Sosial', 'Hubungan interpersonal yang hangat merupakan faktor protektif utama terhadap gangguan mental. Komunikasi yang empatik di lingkungan keluarga maupun pertemanan memberikan rasa aman (psychological safety) yang membuat individu tangguh saat menghadapi kesulitan hidup.', '❤️')" class="font-extrabold text-rose-600 hover:text-rose-800 bg-transparent border-0 cursor-pointer p-0 text-left">
                             Baca Selengkapnya →
-                        </a>
+                        </button>
                     </div>
                 </article>
 
             </div>
         </div>
     </section>
+
+    <!-- Modal Baca Artikel -->
+    <div id="modalBacaArtikel" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-sm p-4" style="display:none;">
+        <div class="bg-white rounded-3xl max-w-2xl w-full p-8 shadow-2xl relative animate-in fade-in zoom-in duration-200">
+            <button type="button" onclick="tutupBacaArtikel()" class="absolute top-6 right-6 w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center font-bold text-lg">
+                ✕
+            </button>
+            <div id="modalIcon" class="w-16 h-16 rounded-2xl bg-sky-50 flex items-center justify-center text-3xl mb-4">
+                📖
+            </div>
+            <span id="modalKategori" class="inline-block px-3 py-1 rounded-full bg-sky-100 text-sky-800 font-bold text-xs uppercase tracking-wider mb-2">
+                Kategori
+            </span>
+            <h2 id="modalJudul" class="text-2xl font-extrabold text-slate-900 mb-4">
+                Judul Artikel
+            </h2>
+            <div class="text-slate-600 leading-relaxed text-base mb-8 space-y-4" id="modalIsi">
+                Isi lengkap artikel...
+            </div>
+            <div class="text-right border-t border-slate-100 pt-5">
+                <button type="button" onclick="tutupBacaArtikel()" class="px-6 py-2.5 rounded-xl bg-slate-900 text-white font-bold text-sm hover:bg-slate-800 transition">
+                    Tutup Bacaan
+                </button>
+            </div>
+        </div>
+    </div>
 
     <section class="py-24 px-6 bg-white">
         <div class="max-w-5xl mx-auto text-center rounded-[2rem] bg-gradient-to-br from-cyan-600 via-blue-600 to-indigo-700 px-8 py-16 text-white shadow-2xl">
@@ -316,5 +342,25 @@
 
     @include('footer')
 
+    <script>
+        function bacaArtikel(judul, kategori, isi, icon) {
+            document.getElementById('modalJudul').innerText = judul;
+            document.getElementById('modalKategori').innerText = kategori;
+            document.getElementById('modalIsi').innerText = isi;
+            document.getElementById('modalIcon').innerText = icon || '📖';
+            document.getElementById('modalBacaArtikel').style.display = 'flex';
+        }
+
+        function tutupBacaArtikel() {
+            document.getElementById('modalBacaArtikel').style.display = 'none';
+        }
+
+        window.onclick = function(e) {
+            let modal = document.getElementById('modalBacaArtikel');
+            if (e.target === modal) {
+                modal.style.display = 'none';
+            }
+        }
+    </script>
 </body>
 </html>

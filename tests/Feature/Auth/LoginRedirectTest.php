@@ -14,6 +14,7 @@ class LoginRedirectTest extends TestCase
     {
         $user = User::factory()->create([
             'email' => 'admin@example.com',
+            'role' => 'admin',
             'password' => 'secret123',
         ]);
 

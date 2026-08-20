@@ -22,7 +22,7 @@ class PasienSeeder extends Seeder
         );
 
         Pasien::updateOrCreate(
-            ['user_id' => $user->id],
+            ['email' => $user->email],
             [
                 'nama' => $user->name,
                 'email' => $user->email,

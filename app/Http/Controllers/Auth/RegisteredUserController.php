@@ -50,7 +50,7 @@ class RegisteredUserController extends Controller
 
         if ($role === 'pasien') {
             Pasien::firstOrCreate(
-                ['user_id' => $user->id],
+                ['email' => $user->email],
                 [
                     'nama' => $request->name,
                     'email' => $request->email,

@@ -298,18 +298,42 @@
                     kesehatan mental dengan lebih baik.
                 </p>
 
-                <a href="{{ route('pasien.cek-kesehatan-mental') }}" class="btn-primary">
+                <a href="{{ route('pasien.tes') }}" class="btn-primary">
                     Mulai Screening
                 </a>
             </div>
 
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon cyan">📝</div>
+                    <p>Total Screening Saya</p>
+                    <h3>{{ $totalScreeningSaya }}</h3>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon blue">🤖</div>
+                    <p>Klaster AI Terakhir</p>
+                    <h3>{{ $latestScreening ? 'Cluster ' . $latestScreening->cluster : '-' }}</h3>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon green">🛡️</div>
+                    <p>Tingkat Risiko Terakhir</p>
+                    <h3 style="font-size: 18px; line-height: 1.3; margin-top: 12px;">{{ $latestScreening ? $latestScreening->tingkat_risiko : 'Belum Screening' }}</h3>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon purple">📚</div>
+                    <p>Edukasi & Artikel</p>
+                    <h3>{{ $totalArtikel + $totalEdukasi }}</h3>
+                </div>
             </div>
 
             <div class="content-grid">
                 <div class="panel">
                     <div class="panel-header">
-                        <h3>Riwayat Screening</h3>
-                        <p>Hasil pemeriksaan kesehatan mental terakhir.</p>
+                        <h3>Riwayat Screening Saya</h3>
+                        <p>Hasil analisis Machine Learning K-Means dari pemeriksaan Anda.</p>
                     </div>
 
                     <!-- Pembungkus Tabel dengan scrolling horizontal independen -->
@@ -317,33 +341,46 @@
                         <table>
                             <thead>
                                 <tr>
-                                    <th>Tanggal</th>
-                                    <th>Skor</th>
-                                    <th>Kategori</th>
-                                    <th>Status</th>
+                                    <th>Tanggal & Jam</th>
+                                    <th>Cluster AI</th>
+                                    <th>Kategori Risiko</th>
+                                    <th>Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr>
-                                    <td>06 Juni 2026</td>
-                                    <td>72</td>
-                                    <td><span class="badge badge-yellow">Sedang</span></td>
-                                    <td>Perlu pemantauan</td>
-                                </tr>
-
-                                <tr>
-                                    <td>30 Mei 2026</td>
-                                    <td>58</td>
-                                    <td><span class="badge badge-green">Ringan</span></td>
-                                    <td>Stabil</td>
-                                </tr>
-
-                                <tr>
-                                    <td>22 Mei 2026</td>
-                                    <td>81</td>
-                                    <td><span class="badge badge-red">Tinggi</span></td>
-                                    <td>Butuh tindak lanjut</td>
-                                </tr>
+                                @forelse($riwayatScreening as $item)
+                                    @php
+                                        $badgeClass = match((int) $item->cluster) {
+                                            0 => 'badge-green',
+                                            1 => 'badge-yellow',
+                                            2 => 'badge-red',
+                                            default => 'badge-yellow'
+                                        };
+                                    @endphp
+                                    <tr>
+                                        <td>
+                                            <div class="font-bold text-slate-900">{{ $item->created_at->format('d M Y') }}</div>
+                                            <div class="text-xs text-slate-400">{{ $item->created_at->format('H:i') }} WIB</div>
+                                        </td>
+                                        <td>
+                                            <span class="font-extrabold text-sky-600">Cluster {{ $item->cluster }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge {{ $badgeClass }}">{{ $item->tingkat_risiko }}</span>
+                                        </td>
+                                        <td>
+                                            <a href="{{ route('pengguna.hasil.show', $item->id) }}" class="inline-flex items-center text-xs font-bold text-sky-600 hover:text-sky-700 bg-sky-50 px-3 py-1.5 rounded-lg border border-sky-200 transition">
+                                                Lihat Detail →
+                                            </a>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="4" class="text-center py-10 text-slate-400 italic">
+                                            Anda belum memiliki riwayat screening. Silakan klik tombol "Mulai Screening" di atas.
+                                        </td>
+                                    </tr>
+                                @endforelse
                             </tbody>
                         </table>
                     </div>

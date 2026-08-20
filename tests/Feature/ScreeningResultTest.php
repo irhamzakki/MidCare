@@ -11,7 +11,7 @@ class ScreeningResultTest extends TestCase
 
     public function test_it_stores_screening_and_flashes_result_profile(): void
     {
-        $response = $this->post('/screening', [
+        $response = $this->from('/screening')->post('/screening', [
             'nama' => 'Budi Test',
             'usia' => 20,
             'jenis_kelamin' => 'Laki-laki',

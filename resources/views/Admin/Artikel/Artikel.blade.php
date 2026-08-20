@@ -453,18 +453,28 @@
                                             onclick="openDetailModal(
                                                 '{{ addslashes($artikel->judul) }}',
                                                 '{{ addslashes($artikel->kategori) }}',
-                                                '{{ addslashes($artikel->ringkasan) }}',
+                                                '{{ addslashes($artikel->ringkasan ?? '') }}',
                                                 `{{ addslashes($artikel->isi) }}`,
                                                 '{{ addslashes($artikel->status) }}'
                                             )">
                                             Detail
                                         </button>
 
-                                        <button type="button" class="action-btn edit">
+                                        <button 
+                                            type="button" 
+                                            class="action-btn edit"
+                                            onclick="openEditModal(
+                                                '{{ $artikel->id }}',
+                                                '{{ addslashes($artikel->judul) }}',
+                                                '{{ addslashes($artikel->kategori) }}',
+                                                '{{ addslashes($artikel->ringkasan ?? '') }}',
+                                                `{{ addslashes($artikel->isi) }}`,
+                                                '{{ addslashes($artikel->status) }}'
+                                            )">
                                             Edit
                                         </button>
 
-                                        <form method="POST" action="#" onsubmit="return confirm('Yakin ingin menghapus artikel ini?')">
+                                        <form method="POST" action="{{ route('Admin.Artikel.destroy', $artikel->id) }}" onsubmit="return confirm('Yakin ingin menghapus artikel ini?')">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="action-btn delete">
@@ -600,6 +610,72 @@
         </div>
     </div>
 
+    <!-- Modal Edit Artikel -->
+    <div id="modalEdit" class="modal-overlay">
+        <div class="modal-content">
+            <div class="form-wrapper">
+                <div class="modal-header">
+                    <h2>Edit Artikel</h2>
+                    <button type="button" class="close-btn" onclick="closeEditModal()">✕</button>
+                </div>
+
+                <form id="formEditArtikel" method="POST" action="" enctype="multipart/form-data">
+                    @csrf
+                    @method('PUT')
+                    <div class="form-grid">
+                        <div class="form-group full">
+                            <label>Judul Artikel</label>
+                            <input type="text" id="edit_judul" name="judul" class="form-control" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Kategori</label>
+                            <select id="edit_kategori" name="kategori" class="form-control" required>
+                                <option value="Mental Health">Mental Health</option>
+                                <option value="Stres">Stres</option>
+                                <option value="Kecemasan">Kecemasan</option>
+                                <option value="Self Care">Self Care</option>
+                                <option value="Konseling">Konseling</option>
+                                <option value="Dukungan Sosial">Dukungan Sosial</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Status Artikel</label>
+                            <select id="edit_status" name="status" class="form-control" required>
+                                <option value="Publish">Publish</option>
+                                <option value="Draft">Draft</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group full">
+                            <label>Ringkasan Artikel</label>
+                            <input type="text" id="edit_ringkasan" name="ringkasan" class="form-control">
+                        </div>
+
+                        <div class="form-group full">
+                            <label>Isi Artikel</label>
+                            <textarea id="edit_isi" name="isi" class="form-control" rows="6" required></textarea>
+                        </div>
+
+                        <div class="form-group full">
+                            <label>Ganti Gambar (Opsional)</label>
+                            <div class="upload-box">
+                                <p style="color:#64748b; margin-bottom:8px;">Pilih file gambar baru jika ingin mengubah</p>
+                                <input type="file" name="gambar" accept="image/*">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn-cancel" onclick="closeEditModal()">Batal</button>
+                        <button type="submit" class="btn-primary">Perbarui Artikel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script>
         function openModal() {
             document.getElementById('modalArtikel').style.display = 'flex';
@@ -623,16 +699,34 @@
             document.getElementById('modalDetail').style.display = 'none';
         }
 
+        function openEditModal(id, judul, kategori, ringkasan, isi, status) {
+            document.getElementById('formEditArtikel').action = '{{ url("/admin/Artikel/Update") }}/' + id;
+            document.getElementById('edit_judul').value = judul;
+            document.getElementById('edit_kategori').value = kategori;
+            document.getElementById('edit_ringkasan').value = ringkasan;
+            document.getElementById('edit_isi').value = isi;
+            document.getElementById('edit_status').value = status;
+
+            document.getElementById('modalEdit').style.display = 'flex';
+        }
+
+        function closeEditModal() {
+            document.getElementById('modalEdit').style.display = 'none';
+        }
+
         window.onclick = function(event) {
             let modalArtikel = document.getElementById('modalArtikel');
             let modalDetail = document.getElementById('modalDetail');
+            let modalEdit = document.getElementById('modalEdit');
 
             if (event.target === modalArtikel) {
                 modalArtikel.style.display = 'none';
             }
-
             if (event.target === modalDetail) {
                 modalDetail.style.display = 'none';
+            }
+            if (event.target === modalEdit) {
+                modalEdit.style.display = 'none';
             }
         }
     </script>
