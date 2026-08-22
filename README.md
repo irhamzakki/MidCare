@@ -30,7 +30,7 @@ Sebelum menjalankan proyek, pastikan perangkat Anda telah terpasang:
 
 ### 1. Clone Repository
 ```bash
-git clone <URL_REPOSITORY_ANDA>
+git clone https://github.com/irhamzakki/MidCare.git
 cd MidCare
 ```
 
