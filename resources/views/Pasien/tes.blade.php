@@ -277,6 +277,33 @@
             <form action="{{ route('screening.store') }}" method="POST" class="space-y-8 mt-10">
                 @csrf
 
+                <!-- Mode Demo / Uji Coba Cepat -->
+                <div class="rounded-[2rem] bg-gradient-to-r from-sky-50 via-indigo-50 to-emerald-50 border border-sky-300 p-6 shadow-sm">
+                    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        <div>
+                            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-100 text-sky-700 text-xs font-bold uppercase tracking-wider mb-2">
+                                <span>✨ Mode Demo / Uji Coba Cepat</span>
+                            </div>
+                            <h3 class="text-lg font-bold text-slate-800">Isi Formulir Otomatis (Demo)</h3>
+                            <p class="text-sm text-slate-600">Pilih salah satu profil di samping untuk mengisi 54 pertanyaan secara instan dalam 1 detik.</p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <button type="button" onclick="autoFillScreening('rendah')" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition shadow-sm hover:shadow flex items-center gap-1.5">
+                                🟢 Demo: Risiko Rendah
+                            </button>
+                            <button type="button" onclick="autoFillScreening('moderat')" class="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition shadow-sm hover:shadow flex items-center gap-1.5">
+                                🟡 Demo: Risiko Moderat
+                            </button>
+                            <button type="button" onclick="autoFillScreening('tinggi')" class="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition shadow-sm hover:shadow flex items-center gap-1.5">
+                                🔴 Demo: Risiko Tinggi
+                            </button>
+                            <button type="button" onclick="autoFillScreening('random')" class="px-4 py-2.5 rounded-xl bg-slate-700 hover:bg-slate-800 text-white text-xs font-bold transition shadow-sm hover:shadow flex items-center gap-1.5">
+                                🎲 Isi Acak
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="rounded-[2rem] bg-white p-8 section-card">
                     <div class="mb-8">
                         <p class="text-sm font-semibold text-sky-600 uppercase tracking-[0.24em] mb-3">Bagian I</p>
@@ -364,6 +391,87 @@
             </form>
         </section>
     </main>
+
+    <script>
+    function autoFillScreening(type) {
+        const names = {
+            'rendah': ['Ahmad Fauzi (Demo Rendah)', 'Nadia Safitri (Demo Rendah)'],
+            'moderat': ['Rina Astuti (Demo Moderat)', 'Budi Hartono (Demo Moderat)'],
+            'tinggi': ['Dimas Pratama (Demo Tinggi)', 'Siti Aisyah (Demo Tinggi)'],
+            'random': ['Responden Demo ' + Math.floor(Math.random() * 900 + 100)]
+        };
+
+        const randomName = (list) => list[Math.floor(Math.random() * list.length)];
+
+        const namaEl = document.getElementById('nama');
+        const usiaEl = document.getElementById('usia');
+        const jkEl = document.getElementById('jenis_kelamin');
+        const ortuEl = document.getElementById('orangtua');
+
+        if (type === 'rendah') {
+            if (namaEl) namaEl.value = randomName(names.rendah);
+            if (usiaEl) usiaEl.value = 21;
+            if (jkEl) jkEl.value = 'Laki-laki';
+            if (ortuEl) ortuEl.value = 'Lengkap';
+        } else if (type === 'moderat') {
+            if (namaEl) namaEl.value = randomName(names.moderat);
+            if (usiaEl) usiaEl.value = 20;
+            if (jkEl) jkEl.value = 'Perempuan';
+            if (ortuEl) ortuEl.value = 'Lengkap';
+        } else if (type === 'tinggi') {
+            if (namaEl) namaEl.value = randomName(names.tinggi);
+            if (usiaEl) usiaEl.value = 19;
+            if (jkEl) jkEl.value = 'Laki-laki';
+            if (ortuEl) ortuEl.value = 'Berpisah';
+        } else {
+            if (namaEl) namaEl.value = randomName(names.random);
+            if (usiaEl) usiaEl.value = Math.floor(Math.random() * 10) + 18;
+            if (jkEl) jkEl.value = Math.random() > 0.5 ? 'Laki-laki' : 'Perempuan';
+            if (ortuEl) ortuEl.value = ['Lengkap', 'Berpisah', 'Salah satu wafat'][Math.floor(Math.random() * 3)];
+        }
+
+        // Isi seluruh radio buttons pertanyaan
+        const radioGroups = {};
+        document.querySelectorAll('input[type="radio"]').forEach(radio => {
+            if (radio.name && radio.name.startsWith('jawaban[')) {
+                if (!radioGroups[radio.name]) {
+                    radioGroups[radio.name] = [];
+                }
+                radioGroups[radio.name].push(radio);
+            }
+        });
+
+        Object.keys(radioGroups).forEach(groupName => {
+            const radios = radioGroups[groupName];
+            let targetVal = 3;
+
+            const isNegative = groupName.includes('marah') || 
+                               groupName.includes('emosi_tidak') || 
+                               groupName.includes('putus_asa') || 
+                               groupName.includes('tidak_bisa') || 
+                               groupName.includes('gundah') ||
+                               groupName.includes('ragu') ||
+                               groupName.includes('cemas');
+
+            if (type === 'rendah') {
+                targetVal = isNegative ? (Math.random() > 0.5 ? 1 : 2) : (Math.random() > 0.5 ? 4 : 5);
+            } else if (type === 'tinggi') {
+                targetVal = isNegative ? (Math.random() > 0.5 ? 4 : 5) : (Math.random() > 0.5 ? 1 : 2);
+            } else if (type === 'moderat') {
+                targetVal = Math.floor(Math.random() * 3) + 2; // 2, 3, atau 4
+            } else {
+                targetVal = Math.floor(Math.random() * 5) + 1; // 1 s.d 5
+            }
+
+            const targetRadio = radios.find(r => parseInt(r.value) === targetVal) || radios[0];
+            if (targetRadio) {
+                targetRadio.checked = true;
+            }
+        });
+
+        alert('✨ Berhasil! Seluruh formulir screening (' + type.toUpperCase() + ') telah diisi otomatis. Silakan klik tombol "Kirim & Proses Hasil Screening" di bawah.');
+    }
+    </script>
 
     @include('footer')
 </body>

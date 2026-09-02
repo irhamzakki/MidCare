@@ -223,12 +223,26 @@
                             <th>Usia</th>
                             <th>Jenis Kelamin</th>
                             <th>Orang Tua</th>
+                            <th>Klaster AI</th>
+                            <th>Kategori Risiko</th>
                             <th>Tanggal Isi</th>
+                            <th>Aksi</th>
                         </tr>
+                    </thead>
                     <tbody>
 
     @forelse($fiturPengguna as $index => $data)
-
+        @php
+            $clustering = $data->hasilClustering;
+            $clusterNum = $clustering ? $clustering->cluster : null;
+            $risikoText = $clustering ? $clustering->tingkat_risiko : 'Belum Dianalisis';
+            $badgeClass = match((int)$clusterNum) {
+                0 => 'badge-green',
+                1 => 'badge-yellow',
+                2 => 'badge-red',
+                default => 'badge-yellow'
+            };
+        @endphp
         <tr>
 
             {{-- No --}}
@@ -266,13 +280,34 @@
                 {{ $data->orangtua ?? '-' }}
             </td>
 
-            
+            {{-- Klaster AI --}}
+            <td>
+                @if($clusterNum !== null)
+                    <span style="font-weight: 800; color: #0284c7;">Cluster {{ $clusterNum }}</span>
+                @else
+                    <span style="color: #94a3b8;">-</span>
+                @endif
+            </td>
+
+            {{-- Kategori Risiko --}}
+            <td>
+                <span class="badge {{ $badgeClass }}">
+                    {{ $risikoText }}
+                </span>
+            </td>
 
             {{-- Tanggal --}}
             <td>
                 {{ $data->created_at
                     ? $data->created_at->format('d-m-Y H:i')
                     : '-' }}
+            </td>
+
+            {{-- Aksi --}}
+            <td>
+                <a href="{{ route('Admin.kuesioner.detail', $data->id) }}" class="action-btn detail">
+                    Lihat Detail →
+                </a>
             </td>
 
         </tr>
@@ -292,10 +327,6 @@
         </tr>
 
     @endforelse
-
-</tbody>
-
-                        
 
                     </tbody>
 

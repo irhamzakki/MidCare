@@ -16,7 +16,16 @@ class PasienController extends Controller
             $query->latest();
         }])->orderBy('nama')->get();
 
-        return view('psikolog.pengguna', compact('pasiens'));
+        $pemeriksaanBulanIni = Screening::whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->count() 
+            ?: \App\Models\HasilClustering::whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->count();
+
+        $risikoTinggi = Screening::where('kategori_risiko', 'Berat')->count() 
+            ?: \App\Models\HasilClustering::where('cluster', 2)->count();
+
+        $perluTindakan = Screening::whereIn('kategori_risiko', ['Sedang', 'Berat'])->count() 
+            ?: \App\Models\HasilClustering::whereIn('cluster', [1, 2])->count();
+
+        return view('psikolog.pengguna', compact('pasiens', 'pemeriksaanBulanIni', 'risikoTinggi', 'perluTindakan'));
     }
 
     public function detail()

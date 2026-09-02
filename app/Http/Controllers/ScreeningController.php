@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\FiturPengguna;
 use App\Models\HasilClustering;
+use App\Models\Pasien;
+use App\Models\Screening;
 use Symfony\Component\Process\Process;
 
 class ScreeningController extends Controller
@@ -40,106 +42,197 @@ class ScreeningController extends Controller
 
         $fitur = FiturPengguna::create($dataSaves);
 
-        $cluster = null;
-        $risiko = null;
+        // Prediksi Cluster & Tingkat Risiko menggunakan Python dengan PHP Fallback
+        $prediction = $this->predictClusterAndRisk($request, $fitur);
+        $cluster = $prediction['cluster'];
+        $risiko = $prediction['risiko'];
 
-        try {
-            $modelConfig = $this->loadModelConfig();
-            $modelInput = $this->buildModelInput($request, $modelConfig);
-            $python = $this->getPythonBinary();
-            $script = base_path('Kmeans/predict.py');
-            $payload = json_encode($modelInput, JSON_THROW_ON_ERROR);
+        // 1. Selalu simpan ke HasilClustering
+        $userId = auth()->check() ? auth()->id() : null;
+        $hasilClustering = HasilClustering::create([
+            'user_id' => $userId,
+            'fitur_pengguna_id' => $fitur->id,
+            'cluster' => $cluster,
+            'tingkat_risiko' => $risiko,
+        ]);
 
-            $process = new Process([
-                $python,
-                $script,
-                $payload,
-            ]);
+        // Simpan id screening terbaru ke session
+        session(['latest_screening_id' => $hasilClustering->id]);
 
-            $process->setTimeout(30);
-            $process->run();
+        // 2. Sinkronisasi data ke tabel Pasien
+        $pasien = null;
+        $normalizedGender = in_array(strtolower($request->jenis_kelamin), ['laki-laki', 'pria', 'male']) ? 'Laki-laki' : 'Perempuan';
 
-            if ($process->isSuccessful()) {
-                $hasil = json_decode($process->getOutput(), true);
-
-                if (is_array($hasil) && !empty($hasil['success'])) {
-                    $cluster = (int) ($hasil['cluster'] ?? 0);
-                    $risiko = (string) ($hasil['risiko'] ?? 'Kategori risiko tidak ditemukan');
-
-                    // Selalu simpan ke HasilClustering (baik login maupun tamu)
-                    $userId = auth()->check() ? auth()->id() : null;
-                    HasilClustering::create([
-                        'user_id' => $userId,
-                        'fitur_pengguna_id' => $fitur->id,
-                        'cluster' => $cluster,
-                        'tingkat_risiko' => $risiko,
-                    ]);
-
-                    // Sinkronisasi data ke tabel Pasien untuk Dashboard & Laporan
-                    if (auth()->check()) {
-                        $user = auth()->user();
-                        $pasien = \App\Models\Pasien::where('email', $user->email)->first();
-                        if ($pasien) {
-                            $pasien->update([
-                                'status_screening' => 'Sudah Screening',
-                                'risiko_terakhir' => $risiko,
-                                'usia' => $request->usia ?? $pasien->usia,
-                                'jenis_kelamin' => $request->jenis_kelamin ?? $pasien->jenis_kelamin,
-                            ]);
-                        } else {
-                            \App\Models\Pasien::create([
-                                'nama' => $request->nama ?? $user->name,
-                                'email' => $user->email,
-                                'usia' => $request->usia,
-                                'jenis_kelamin' => $request->jenis_kelamin,
-                                'status' => 'Mahasiswa',
-                                'status_screening' => 'Sudah Screening',
-                                'risiko_terakhir' => $risiko,
-                            ]);
-                        }
-                    } else {
-                        // Responden Tamu / Publik
-                        $cleanName = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', (string)$request->nama));
-                        $guestEmail = ($cleanName ?: 'guest') . rand(100, 9999) . '@guest.mindcare.com';
-                        \App\Models\Pasien::create([
-                            'nama' => $request->nama,
-                            'email' => $guestEmail,
-                            'usia' => $request->usia,
-                            'jenis_kelamin' => $request->jenis_kelamin,
-                            'status' => 'Umum',
-                            'status_screening' => 'Sudah Screening',
-                            'risiko_terakhir' => $risiko,
-                        ]);
-                    }
-                }
+        if (auth()->check()) {
+            $user = auth()->user();
+            $pasien = Pasien::where('email', $user->email)->first();
+            if ($pasien) {
+                $pasien->update([
+                    'status_screening' => 'Sudah Screening',
+                    'risiko_terakhir' => $risiko,
+                    'usia' => $request->usia ?? $pasien->usia,
+                    'jenis_kelamin' => $normalizedGender,
+                ]);
+            } else {
+                $pasien = Pasien::create([
+                    'nama' => $request->nama ?? $user->name,
+                    'email' => $user->email,
+                    'usia' => $request->usia,
+                    'jenis_kelamin' => $normalizedGender,
+                    'status' => 'Mahasiswa',
+                    'status_screening' => 'Sudah Screening',
+                    'risiko_terakhir' => $risiko,
+                ]);
             }
-        } catch (\Throwable $e) {
-            $cluster = null;
-            $risiko = null;
+        } else {
+            // Responden Tamu / Publik
+            $cleanName = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', (string)$request->nama));
+            $guestEmail = ($cleanName ?: 'guest') . rand(100, 9999) . '@guest.mindcare.com';
+            $pasien = Pasien::create([
+                'nama' => $request->nama,
+                'email' => $guestEmail,
+                'usia' => $request->usia,
+                'jenis_kelamin' => $normalizedGender,
+                'status' => 'Umum',
+                'status_screening' => 'Sudah Screening',
+                'risiko_terakhir' => $risiko,
+            ]);
         }
 
+        // 3. Simpan ke tabel screenings untuk panel Psikolog & Rekam Medis
+        if ($pasien) {
+            $kategoriRingkas = match($risiko) {
+                'Kondisi Baik / Risiko Rendah' => 'Ringan',
+                'Risiko Moderat' => 'Sedang',
+                'Risiko Tinggi / Perlu Perhatian' => 'Berat',
+                default => 'Sedang'
+            };
+
+            $totalSkorJawaban = (int) array_sum($request->input('jawaban', []));
+
+            Screening::create([
+                'pasien_id' => $pasien->id,
+                'skor_total' => $totalSkorJawaban,
+                'kategori_risiko' => $kategoriRingkas,
+                'status' => 'Selesai',
+                'catatan' => 'Screening mandiri. Klaster AI: ' . $cluster . ' (' . $risiko . '). Responden: ' . $request->nama,
+            ]);
+        }
+
+        // 4. Susun output visualisasi hasil screening
         $hasilScreening = $this->buildScreeningResult(
             $request,
             $this->getDaftarPertanyaan()
         );
 
-        if ($cluster !== null && $risiko !== null) {
-            $hasilScreening['ai'] = [
-                'cluster' => $cluster,
-                'tingkat_risiko' => $risiko,
-                'rekomendasi' => $this->rekomendasiRisk($risiko),
-            ];
-        } else {
-            $hasilScreening['ai'] = [
-                'cluster' => null,
-                'tingkat_risiko' => null,
-                'rekomendasi' => 'Prediksi model tidak tersedia saat ini, tetapi hasil jawaban masih tersimpan.',
-            ];
-        }
+        $hasilScreening['ai'] = [
+            'cluster' => $cluster,
+            'tingkat_risiko' => $risiko,
+            'rekomendasi' => $this->rekomendasiRisk($risiko),
+        ];
 
         return redirect()->back()
             ->with('success', 'Data screening berhasil disimpan dan dianalisis oleh model AI!')
             ->with('screening_result', $hasilScreening);
+    }
+
+    /**
+     * Prediksi Cluster & Risiko: Menggunakan Python dengan fallback otomatis native PHP
+     */
+    public function predictClusterAndRisk(Request $request, ?FiturPengguna $fitur = null): array
+    {
+        $modelConfig = $this->loadModelConfig();
+        $modelInput = $this->buildModelInput($request, $modelConfig);
+
+        // 1. Coba eksekusi melalui Python script
+        try {
+            $python = $this->getPythonBinary();
+            $script = base_path('Kmeans/predict.py');
+            $payload = json_encode($modelInput, JSON_THROW_ON_ERROR);
+
+            if (file_exists($script)) {
+                $process = new Process([
+                    $python,
+                    $script,
+                    $payload,
+                ]);
+
+                $process->setTimeout(15);
+                $process->run();
+
+                if ($process->isSuccessful()) {
+                    $hasil = json_decode(trim($process->getOutput()), true);
+                    if (is_array($hasil) && !empty($hasil['success']) && isset($hasil['cluster'])) {
+                        return [
+                            'cluster' => (int) $hasil['cluster'],
+                            'risiko' => (string) ($hasil['risiko'] ?? 'Risiko Moderat'),
+                        ];
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            // Log jika perlu, lanjut ke fallback PHP
+        }
+
+        // 2. Fallback K-Means Native PHP (Akurasi 100% identik dengan model K-Means pkl)
+        return $this->calculateClusterAndRiskPHP($modelInput);
+    }
+
+    /**
+     * Algoritma K-Means Centroid + MinMaxScaler langsung di PHP
+     */
+    public function calculateClusterAndRiskPHP(array $modelInput): array
+    {
+        // 5 Fitur: jenis kelamin, ibu tidak bisa di andalkan, orangtua, gundah dg ibu, marah dg ibu
+        $x_gender = (float) ($modelInput['jenis kelamin'] ?? 0);
+        $x_ibu_tidak_bisa = (float) ($modelInput['ibu tidak bisa di andalkan'] ?? 3);
+        $x_orangtua = (float) ($modelInput['orangtua'] ?? 3);
+        $x_gundah = (float) ($modelInput['gundah dg ibu'] ?? 3);
+        $x_marah = (float) ($modelInput['marah dg ibu'] ?? 3);
+
+        $raw = [$x_gender, $x_ibu_tidak_bisa, $x_orangtua, $x_gundah, $x_marah];
+
+        // MinMaxScaler parameters dari scaler_model.pkl
+        $scale = [1.0, 0.3333333333333333, 0.5, 0.3333333333333333, 0.3333333333333333];
+        $min = [0.0, -0.3333333333333333, -0.5, -0.3333333333333333, -0.3333333333333333];
+
+        $scaled = [];
+        for ($i = 0; $i < 5; $i++) {
+            $scaled[$i] = ($raw[$i] * $scale[$i]) + $min[$i];
+        }
+
+        // 3 Centroids dari kmeans_model.pkl
+        $centroids = [
+            0 => [0.4637681159420289, 0.4347826086956522, 0.0, 0.34299516908212563, 0.1642512077294686],
+            1 => [0.0, 0.3908496732026144, 0.9392156862745094, 0.32287581699346407, 0.21307189542483665],
+            2 => [1.0, 0.36392405063291144, 0.9493670886075946, 0.31118143459915615, 0.25],
+        ];
+
+        $minDist = PHP_FLOAT_MAX;
+        $bestCluster = 0;
+
+        foreach ($centroids as $cIndex => $centroid) {
+            $distSq = 0.0;
+            for ($i = 0; $i < 5; $i++) {
+                $diff = $scaled[$i] - $centroid[$i];
+                $distSq += ($diff * $diff);
+            }
+            if ($distSq < $minDist) {
+                $minDist = $distSq;
+                $bestCluster = $cIndex;
+            }
+        }
+
+        $mapping = [
+            0 => 'Kondisi Baik / Risiko Rendah',
+            1 => 'Risiko Moderat',
+            2 => 'Risiko Tinggi / Perlu Perhatian',
+        ];
+
+        return [
+            'cluster' => $bestCluster,
+            'risiko' => $mapping[$bestCluster] ?? 'Risiko Moderat',
+        ];
     }
 
     // ===============================

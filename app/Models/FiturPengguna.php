@@ -44,4 +44,9 @@ class FiturPengguna extends Model
         'kurang_perhatian_ibu', 'ibu_dorong_cerita', 'ibu_pahami_saya', 'ibu_pahami_marah_saya', 
         'percaya_ibu', 'ibu_tidak_paham', 'ibu_tidak_bisa_diandalkan', 'ibu_peduli'
     ];
+
+    public function hasilClustering()
+    {
+        return $this->hasOne(HasilClustering::class, 'fitur_pengguna_id');
+    }
 }

@@ -100,16 +100,6 @@ class ScreeningController extends Controller
     // 2. Menyimpan Jawaban ke Database
     public function store(Request $request)
     {
-        // Validasi profil dasar wajib diisi
-        $request->validate([
-            'nama' => 'required|string|max:100',
-            'usia' => 'required|integer',
-            'jenis_kelamin' => 'required|string',
-            'orangtua' => 'required|string',
-        ]);
-
-        $input = $request->except(['_token', '_method']);
-
-        return redirect()->back()->with('success', 'Terima kasih, data screening berhasil disimpan!');
+        return app(\App\Http\Controllers\ScreeningController::class)->store($request);
     }
 }

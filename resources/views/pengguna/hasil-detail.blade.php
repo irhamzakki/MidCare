@@ -26,16 +26,20 @@
             <!-- Header -->
             <div class="mb-8">
                 @php
-                    $backUrl = (Auth::user()->role ?? '') === 'admin' 
-                        ? route('admin.kuesioner.index') 
-                        : (Route::has('pengguna.hasil') ? route('pengguna.hasil') : url()->previous());
+                    $role = Auth::user()->role ?? '';
+                    $backUrl = match($role) {
+                        'admin' => route('admin.kuesioner.index'),
+                        'psikolog' => route('psikolog.dashboard'),
+                        'pasien' => route('pengguna.hasil'),
+                        default => url()->previous(),
+                    };
                 @endphp
                 <a href="{{ $backUrl }}" class="text-sky-600 hover:text-sky-700 font-semibold mb-3 inline-flex items-center text-sm bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm transition hover:shadow">
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
                     Kembali
                 </a>
                 <h1 class="text-3xl font-extrabold text-slate-900 mt-2 mb-1 tracking-tight">Detail Hasil Screening</h1>
-                <p class="text-slate-500 text-sm">Waktu pemeriksaan: {{ $hasil->created_at->format('d F Y H:i') }}</p>
+                <p class="text-slate-500 text-sm">Waktu pemeriksaan: {{ optional($hasil->created_at)->format('d F Y H:i') ?? now()->format('d F Y H:i') }}</p>
             </div>
 
             <!-- Ringkasan Status -->
@@ -47,19 +51,19 @@
                         <div class="space-y-4">
                             <div class="flex justify-between border-b border-blue-100 pb-3">
                                 <span class="text-slate-600">Nama</span>
-                                <span class="font-semibold text-slate-900">{{ $hasil->fiturPengguna->nama }}</span>
+                                <span class="font-semibold text-slate-900">{{ optional($hasil->fiturPengguna)->nama ?? 'Responden' }}</span>
                             </div>
                             <div class="flex justify-between border-b border-blue-100 pb-3">
                                 <span class="text-slate-600">Usia</span>
-                                <span class="font-semibold text-slate-900">{{ $hasil->fiturPengguna->usia }} tahun</span>
+                                <span class="font-semibold text-slate-900">{{ optional($hasil->fiturPengguna)->usia ?? '-' }} tahun</span>
                             </div>
                             <div class="flex justify-between border-b border-blue-100 pb-3">
                                 <span class="text-slate-600">Jenis Kelamin</span>
-                                <span class="font-semibold text-slate-900">{{ $hasil->fiturPengguna->jenis_kelamin }}</span>
+                                <span class="font-semibold text-slate-900">{{ optional($hasil->fiturPengguna)->jenis_kelamin ?? '-' }}</span>
                             </div>
                             <div class="flex justify-between">
                                 <span class="text-slate-600">Status Orang Tua</span>
-                                <span class="font-semibold text-slate-900">{{ $hasil->fiturPengguna->orangtua }}</span>
+                                <span class="font-semibold text-slate-900">{{ optional($hasil->fiturPengguna)->orangtua ?? '-' }}</span>
                             </div>
                         </div>
                     </div>
