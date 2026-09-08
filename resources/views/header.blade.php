@@ -203,7 +203,7 @@
         <!-- Logo -->
         <a href="{{ url('/') }}" class="navbar-logo">
 
-            <img src="{{ asset('images/logo.png') }}" alt="MindCare">
+            <img src="{{ asset('Images/Logo.png') }}" alt="MindCare">
 
             <div>
                 <div class="brand-title">
