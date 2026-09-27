@@ -291,7 +291,7 @@
 
                 <div class="cluster-box cluster-1">
                     <div class="cluster-title">
-                        <span>Cluster 1: Risiko Moderat</span>
+                        <span>Cluster 1: Risiko Sedang</span>
                         <span class="badge-risk risk-moderat">Moderat</span>
                     </div>
                     <div class="cluster-count">{{ $cluster1Count ?? 0 }}</div>

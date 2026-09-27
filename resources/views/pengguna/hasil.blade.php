@@ -49,9 +49,9 @@
                             <p class="text-xs font-semibold text-slate-500 uppercase">Tingkat Risiko</p>
                             @php
                                 $riskColor = match($recentResult->tingkat_risiko) {
-                                    'Kondisi Baik / Risiko Rendah' => 'emerald',
-                                    'Risiko Moderat' => 'amber',
-                                    'Risiko Tinggi / Perlu Perhatian' => 'rose',
+                                    'Risiko Rendah' => 'emerald',
+                                    'Risiko Sedang' => 'amber',
+                                    'Risiko Tinggi' => 'rose',
                                     default => 'slate'
                                 };
                             @endphp

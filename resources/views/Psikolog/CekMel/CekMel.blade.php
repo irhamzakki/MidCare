@@ -229,7 +229,12 @@
                         </div>
                         <div>
                             <label class="block text-slate-700 font-semibold mb-2">Status Orang Tua</label>
-                            <input type="text" name="orangtua" required class="form-input-custom" placeholder="Contoh: Lengkap / Cerai / Yatim">
+                            <select name="orangtua" required class="form-input-custom">
+                                <option value="" disabled selected>-- Pilih Status Orang Tua --</option>
+                                <option value="Lengkap">Lengkap</option>
+                                <option value="Berpisah">Berpisah</option>
+                                <option value="Salah satu wafat">Salah satu wafat</option>
+                            </select>
                         </div>
                     </div>
                 </div>

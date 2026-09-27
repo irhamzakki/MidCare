@@ -8,7 +8,7 @@
     ],
     "cluster_mapping": {
         "0": "Kondisi Baik / Risiko Rendah",
-        "1": "Risiko Moderat",
+        "1": "Risiko Sedang",
         "2": "Risiko Tinggi / Perlu Perhatian"
     },
     "encoding": {

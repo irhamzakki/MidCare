@@ -43,6 +43,21 @@
             </div>
 
             <!-- Ringkasan Status -->
+            @php
+                $jenisKelamin = optional($hasil->fiturPengguna)->jenis_kelamin;
+                $statusOrangtua = optional($hasil->fiturPengguna)->orangtua;
+                $kodeJenisKelamin = match (strtolower(trim((string) $jenisKelamin))) {
+                    'laki-laki', 'pria', 'male' => 0,
+                    'perempuan', 'female' => 1,
+                    default => null,
+                };
+                $kodeStatusOrangtua = match (strtolower(trim((string) $statusOrangtua))) {
+                    'salah satu wafat' => 1,
+                    'berpisah' => 2,
+                    'lengkap' => 3,
+                    default => null,
+                };
+            @endphp
             <div class="rounded-3xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 p-8 mb-10 shadow-sm">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <!-- Profil -->
@@ -59,11 +74,17 @@
                             </div>
                             <div class="flex justify-between border-b border-blue-100 pb-3">
                                 <span class="text-slate-600">Jenis Kelamin</span>
-                                <span class="font-semibold text-slate-900">{{ optional($hasil->fiturPengguna)->jenis_kelamin ?? '-' }}</span>
+                                <span class="font-semibold text-slate-900">
+                                    {{ $kodeJenisKelamin ?? '-' }}
+                                    <span class="block text-xs font-normal text-slate-500">{{ $jenisKelamin ?? '-' }}</span>
+                                </span>
                             </div>
                             <div class="flex justify-between">
                                 <span class="text-slate-600">Status Orang Tua</span>
-                                <span class="font-semibold text-slate-900">{{ optional($hasil->fiturPengguna)->orangtua ?? '-' }}</span>
+                                <span class="font-semibold text-slate-900">
+                                    {{ $kodeStatusOrangtua ?? '-' }}
+                                    <span class="block text-xs font-normal text-slate-500">{{ $statusOrangtua ?? '-' }}</span>
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -78,15 +99,15 @@
                             </div>
                             @php
                                 $riskColor = match($hasil->tingkat_risiko) {
-                                    'Kondisi Baik / Risiko Rendah' => 'emerald',
-                                    'Risiko Moderat' => 'amber',
-                                    'Risiko Tinggi / Perlu Perhatian' => 'rose',
+                                    'Risiko Rendah' => 'emerald',
+                                    'Risiko Sedang' => 'amber',
+                                    'Risiko Tinggi' => 'rose',
                                     default => 'slate'
                                 };
                                 $riskBg = match($hasil->tingkat_risiko) {
-                                    'Kondisi Baik / Risiko Rendah' => 'bg-emerald-100',
-                                    'Risiko Moderat' => 'bg-amber-100',
-                                    'Risiko Tinggi / Perlu Perhatian' => 'bg-rose-100',
+                                    'Risiko Rendah' => 'bg-emerald-100',
+                                    'Risiko Sedang' => 'bg-amber-100',
+                                    'Risiko Tinggi' => 'bg-rose-100',
                                     default => 'bg-slate-100'
                                 };
                             @endphp
@@ -103,7 +124,61 @@
                 </div>
             </div>
 
-            <!-- Detail Jawaban per Kategori -->
+            <!-- Detail lima fitur yang digunakan model -->
+            <div class="space-y-8">
+                @php
+                    $kategoris = [
+                        'Fitur Pertanyaan Model' => [
+                            'ibu_tidak_bisa_diandalkan',
+                            'gundah_dengan_ibu',
+                            'marah_dengan_ibu',
+                        ],
+                    ];
+                    $labelPertanyaan = [
+                        'ibu_tidak_bisa_diandalkan' => 'Ibu tidak bisa diandalkan saat saya membutuhkan bantuan.',
+                        'gundah_dengan_ibu' => 'Saya sering merasa gundah atau gelisah terhadap Ibu.',
+                        'marah_dengan_ibu' => 'Saya sering merasa marah terhadap Ibu.',
+                    ];
+                @endphp
+                <div class="rounded-3xl bg-white border border-slate-200 p-8 shadow-sm">
+                    <h2 class="text-2xl font-bold text-slate-900 mb-2">Lima Fitur Model</h2>
+                    <p class="text-sm text-slate-500 mb-6">Hasil analisis menggunakan jenis kelamin, status orangtua, dan tiga jawaban berikut.</p>
+                    <div class="space-y-4">
+                        @foreach($kategoris['Fitur Pertanyaan Model'] as $kolom)
+                            @php
+                                $nilai = $hasil->fiturPengguna->{$kolom};
+                                $labelSkor = match($nilai) {
+                                    1 => 'Sangat Tidak Setuju',
+                                    2 => 'Tidak Setuju',
+                                    3 => 'Netral',
+                                    4 => 'Setuju',
+                                    5 => 'Sangat Setuju',
+                                    default => 'N/A'
+                                };
+                                $colorClass = match($nilai) {
+                                    1 => 'bg-rose-100 text-rose-700',
+                                    2 => 'bg-orange-100 text-orange-700',
+                                    3 => 'bg-slate-100 text-slate-700',
+                                    4 => 'bg-cyan-100 text-cyan-700',
+                                    5 => 'bg-emerald-100 text-emerald-700',
+                                    default => 'bg-slate-100 text-slate-700'
+                                };
+                            @endphp
+                            <div class="flex items-start gap-4 pb-4 border-b border-slate-100 last:border-0">
+                                <span class="inline-flex items-center justify-center rounded-full {{ $colorClass }} w-12 h-12 font-bold text-sm">
+                                    {{ $nilai ?? '—' }}
+                                </span>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-slate-900 leading-relaxed">{{ $labelPertanyaan[$kolom] }}</p>
+                                    <p class="text-xs text-slate-500 mt-1">{{ $labelSkor }}</p>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+
+            @if(false)
             <div class="space-y-8">
                 @php
                     $kategoris = [
@@ -248,6 +323,7 @@
                     </div>
                 @endforeach
             </div>
+            @endif
 
             <!-- Rekomendasi -->
             <div class="mt-10 rounded-3xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 p-8 shadow-sm">
@@ -257,8 +333,8 @@
                         $risiko = $hasil->tingkat_risiko;
                         $rekomendasi = match($risiko) {
                             'Kondisi Baik / Risiko Rendah' => 'Profil Anda menunjukkan kondisi yang baik dan stabil. Tetap jaga keseimbangan emosi dan dukungan sosial Anda. Lanjutkan kebiasaan positif yang Anda miliki.',
-                            'Risiko Moderat' => 'Profil Anda menunjukkan beberapa area yang perlu perhatian. Disarankan untuk tetap menjaga kesehatan mental melalui aktivitas positif, berbicara dengan orang terpercaya, dan mempertimbangkan konsultasi dengan profesional jika diperlukan.',
-                            'Risiko Tinggi / Perlu Perhatian' => 'Profil Anda menunjukkan beberapa indikasi yang perlu perhatian khusus. Sangat disarankan untuk berkonsultasi dengan tenaga profesional kesehatan mental atau konselor untuk mendapatkan dukungan yang lebih komprehensif.',
+                            'Risiko Sedang' => 'Profil Anda menunjukkan beberapa area yang perlu perhatian. Disarankan untuk tetap menjaga kesehatan mental melalui aktivitas positif, berbicara dengan orang terpercaya, dan mempertimbangkan konsultasi dengan profesional jika diperlukan.',
+                            'Risiko Tinggi' => 'Profil Anda menunjukkan beberapa indikasi yang perlu perhatian khusus. Sangat disarankan untuk berkonsultasi dengan tenaga profesional kesehatan mental atau konselor untuk mendapatkan dukungan yang lebih komprehensif.',
                             default => 'Lanjutkan monitoring kesehatan mental Anda secara berkala.'
                         };
                     @endphp

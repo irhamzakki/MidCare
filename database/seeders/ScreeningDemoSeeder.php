@@ -161,9 +161,9 @@ class ScreeningDemoSeeder extends Seeder
             }
 
             $kategoriRingkas = match($risiko) {
-                'Kondisi Baik / Risiko Rendah' => 'Ringan',
-                'Risiko Moderat' => 'Sedang',
-                'Risiko Tinggi / Perlu Perhatian' => 'Berat',
+                'Risiko Rendah' => 'Ringan',
+                'Risiko Sedang' => 'Sedang',
+                'Risiko Tinggi' => 'Berat',
                 default => 'Sedang'
             };
 
