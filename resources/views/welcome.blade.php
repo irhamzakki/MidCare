@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>MindCare - Deteksi Dini Kesehatan Mental</title>
-    <link rel="icon" href="{{ asset('Images/Logo.png') }}" type="image/x-icon">
+    <link rel="icon" href="{{ asset('images/Logo.png') }}" type="image/x-icon">
 
     {{-- Untuk project Laravel yang sudah memakai Tailwind via Vite, ganti CDN ini dengan:
          @vite(['resources/css/app.css', 'resources/js/app.js'])

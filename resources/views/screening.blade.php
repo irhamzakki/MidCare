@@ -276,7 +276,33 @@
             <!-- Form Utama (Isian & style form tetap utuh sesuai kode asli) -->
             <form action="{{ route('screening.store') }}" method="POST" class="space-y-8 mt-10">
                 @csrf
-                
+
+                <!-- Mode Demo / Uji Coba Cepat -->
+                <div class="rounded-[2rem] bg-gradient-to-r from-sky-50 via-indigo-50 to-emerald-50 border border-sky-300 p-6 shadow-sm">
+                    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        <div>
+                            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-100 text-sky-700 text-xs font-bold uppercase tracking-wider mb-2">
+                                <span>✨ Mode Demo / Uji Coba Cepat</span>
+                            </div>
+                            <h3 class="text-lg font-bold text-slate-800">Isi Formulir Otomatis (Demo)</h3>
+                            <p class="text-sm text-slate-600">Pilih salah satu profil di samping untuk mengisi 54 pertanyaan secara instan dalam 1 detik.</p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <button type="button" onclick="autoFillScreening('rendah')" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition shadow-sm hover:shadow flex items-center gap-1.5">
+                                🟢 Demo: Risiko Rendah
+                            </button>
+                            <button type="button" onclick="autoFillScreening('moderat')" class="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition shadow-sm hover:shadow flex items-center gap-1.5">
+                                🟡 Demo: Risiko Moderat
+                            </button>
+                            <button type="button" onclick="autoFillScreening('tinggi')" class="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition shadow-sm hover:shadow flex items-center gap-1.5">
+                                🔴 Demo: Risiko Tinggi
+                            </button>
+                            <button type="button" onclick="autoFillScreening('random')" class="px-4 py-2.5 rounded-xl bg-slate-700 hover:bg-slate-800 text-white text-xs font-bold transition shadow-sm hover:shadow flex items-center gap-1.5">
+                                🎲 Isi Acak
+                            </button>
+                        </div>
+                    </div>
+                </div>
 
                 <div class="rounded-[2rem] bg-white p-8 section-card">
                     <div class="mb-8">
@@ -304,18 +330,12 @@
                         </div>
                         <div class="form-field">
                             <label for="orangtua">Status Orang Tua</label>
-                            <select id="orangtua" name="orangtua" required>
-                                <option value="" disabled selected>-- Pilih Status Orang Tua --</option>
-                                <option value="Lengkap">Lengkap</option>
-                                <option value="Berpisah">Berpisah</option>
-                                <option value="Salah satu wafat">Salah satu wafat</option>
-                            </select>
+                            <input type="text" id="orangtua" name="orangtua" required placeholder="Contoh: Lengkap / Cerai / Yatim">
                         </div>
                     </div>
                 </div>
 
                 <div class="rounded-[2rem] bg-white p-8 section-card">
-                    
                     <div class="mb-6">
                         <p class="text-sm font-semibold text-sky-600 uppercase tracking-[0.24em] mb-3">Bagian II</p>
                         <h2 class="text-3xl font-bold">Kuisioner Aspek Psikologis</h2>
@@ -342,14 +362,7 @@
                                             @for($i = 1; $i <= 5; $i++)
                                                 <label class="radio-step">
                                                     <input type="radio" name="jawaban[{{ $keyKolom }}]" value="{{ $i }}" required>
-                                                    <span>
-                                                        @if($i === 1) 1: Sangat Tidak Setuju
-                                                        @elseif($i === 2) 2: Tidak Setuju
-                                                        @elseif($i === 3) 3: Netral
-                                                        @elseif($i === 4) 4: Setuju
-                                                        @else 5: Sangat Setuju
-                                                        @endif
-                                                    </span>
+                                                    <span>Skala {{ $i }}</span>
                                                 </label>
                                             @endfor
                                         </div>
@@ -359,6 +372,17 @@
                         </div>
                     @endforeach
                     @endif
+
+                    <div class="rounded-3xl bg-slate-50 border border-slate-200 p-6 text-sm text-slate-600">
+                        <div class="font-semibold text-slate-900 mb-2">Legenda:</div>
+                        <div class="grid gap-2 sm:grid-cols-5 text-center">
+                            <div><strong>1</strong> Sangat Tidak Setuju</div>
+                            <div><strong>2</strong> Tidak Setuju</div>
+                            <div><strong>3</strong> Netral</div>
+                            <div><strong>4</strong> Setuju</div>
+                            <div><strong>5</strong> Sangat Setuju</div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="text-right">

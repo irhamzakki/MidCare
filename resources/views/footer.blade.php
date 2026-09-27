@@ -14,7 +14,7 @@
                 <div class="flex items-center gap-4 mb-5">
 
                     <img
-                        src="{{ asset('Images/zaki.jpg') }}"
+                        src="{{ asset('images/zaki.jpg') }}"
                         alt="Zaki Profile Picture"
                         class="w-24 h-24 rounded-2xl object-cover border-4 border-cyan-500 shadow-xl"
                     >

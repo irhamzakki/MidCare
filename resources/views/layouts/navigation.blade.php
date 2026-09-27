@@ -283,7 +283,7 @@
             @endphp
             <a href="{{ $logoUrl }}" class="mc-logo">
                 <div class="mc-logo-box">
-                    <img src="{{ asset('Images/Logo.png') }}" alt="Logo">
+                    <img src="{{ asset('images/logo.png') }}" alt="Logo">
                 </div>
                 <span class="mc-brand">MindCare</span>
             </a>

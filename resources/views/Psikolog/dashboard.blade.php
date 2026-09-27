@@ -324,7 +324,7 @@
 
                 <div class="stat-card">
                     <div class="stat-icon purple">⚠️</div>
-                    <p>Risiko Sedang (Cluster 1)</p>
+                    <p>Risiko Moderat (Cluster 1)</p>
                     <h3 class="text-amber-600">{{ $totalRisikoModerat }}</h3>
                 </div>
             </div>
